@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/derekFixBug/open-secret-guard/internal/sarif"
 	"github.com/derekFixBug/open-secret-guard/internal/scanner"
 )
 
@@ -39,7 +40,7 @@ func runScan(args []string) error {
 	flags := flag.NewFlagSet("scan", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 
-	format := flags.String("format", "text", "output format: text or json")
+	format := flags.String("format", "text", "output format: text, json, or sarif")
 	failOnFindings := flags.Bool("fail-on-findings", false, "exit with a non-zero status when findings are detected")
 	includeHidden := flags.Bool("include-hidden", false, "scan hidden files and directories")
 	exclude := flags.String("exclude", "", "comma-separated file or directory patterns to skip")
@@ -70,6 +71,12 @@ func runScan(args []string) error {
 		encoder := json.NewEncoder(os.Stdout)
 		encoder.SetIndent("", "  ")
 		if err := encoder.Encode(report); err != nil {
+			return err
+		}
+	case "sarif":
+		encoder := json.NewEncoder(os.Stdout)
+		encoder.SetIndent("", "  ")
+		if err := encoder.Encode(sarif.FromReport(report)); err != nil {
 			return err
 		}
 	default:
@@ -144,7 +151,7 @@ Usage:
   open-secret-guard scan [path ...] [flags]
 
 Flags:
-  -format text|json       Output format
+  -format text|json|sarif Output format
   -fail-on-findings       Exit non-zero when findings are detected
   -include-hidden         Scan hidden files and directories
   -exclude pattern        Comma-separated file or directory patterns to skip`)

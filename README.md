@@ -41,6 +41,12 @@ Return JSON for automation:
 open-secret-guard scan . -format json
 ```
 
+Return SARIF for GitHub code scanning integrations:
+
+```sh
+open-secret-guard scan . -format sarif
+```
+
 Fail CI when findings are detected:
 
 ```sh
@@ -87,7 +93,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.22"
-      - run: go run ./cmd/open-secret-guard scan . -fail-on-findings
+      - run: go run ./cmd/open-secret-guard scan . -exclude examples -fail-on-findings
+
+      # Optional: write SARIF for upload with github/codeql-action/upload-sarif.
+      - run: go run ./cmd/open-secret-guard scan . -exclude examples -format sarif > open-secret-guard.sarif
 ```
 
 ## Project status
@@ -97,7 +106,6 @@ This project is intentionally small and early. The first goal is to provide a cl
 Planned improvements:
 
 - configurable allowlists;
-- SARIF output for code scanning integrations;
 - `.env.example` generation;
 - more provider-specific token patterns;
 - pre-commit hook examples.
