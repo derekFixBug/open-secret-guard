@@ -15,9 +15,10 @@ import (
 const maxFileBytes = 2 * 1024 * 1024
 
 type Options struct {
-	Paths         []string `json:"paths"`
-	IncludeHidden bool     `json:"includeHidden"`
-	Exclude       []string `json:"exclude"`
+	Paths         []string  `json:"paths"`
+	IncludeHidden bool      `json:"includeHidden"`
+	Exclude       []string  `json:"exclude"`
+	Allowlist     Allowlist `json:"allowlist"`
 }
 
 type Report struct {
@@ -34,6 +35,10 @@ type Finding struct {
 	Column        int    `json:"column"`
 	Message       string `json:"message"`
 	RedactedMatch string `json:"redactedMatch"`
+}
+
+type Allowlist interface {
+	IsAllowed(Finding) bool
 }
 
 type Rule struct {
@@ -110,7 +115,21 @@ func Scan(options Options) (Report, error) {
 		return left.Column < right.Column
 	})
 
+	if options.Allowlist != nil {
+		report.Findings = filterAllowedFindings(report.Findings, options.Allowlist)
+	}
+
 	return report, nil
+}
+
+func filterAllowedFindings(findings []Finding, allowlist Allowlist) []Finding {
+	filtered := findings[:0]
+	for _, finding := range findings {
+		if !allowlist.IsAllowed(finding) {
+			filtered = append(filtered, finding)
+		}
+	}
+	return filtered
 }
 
 func scanPath(path string, options Options, report *Report) error {

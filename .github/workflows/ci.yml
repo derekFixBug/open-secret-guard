@@ -14,5 +14,5 @@ jobs:
         with:
           go-version: "1.22"
       - run: go test ./...
-      - run: go run ./cmd/open-secret-guard scan . -exclude examples -fail-on-findings
-      - run: go run ./cmd/open-secret-guard scan . -exclude examples -format sarif > open-secret-guard.sarif
+      - run: go run ./cmd/open-secret-guard scan . -allowlist .open-secret-guard.allowlist -fail-on-findings
+      - run: go run ./cmd/open-secret-guard scan . -allowlist .open-secret-guard.allowlist -format sarif > open-secret-guard.sarif

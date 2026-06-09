@@ -65,6 +65,24 @@ Exclude demo or fixture paths:
 open-secret-guard scan . -exclude examples,testdata
 ```
 
+Allow a reviewed finding without skipping the whole file:
+
+```sh
+open-secret-guard scan . -allowlist .open-secret-guard.allowlist
+```
+
+Allowlist entries use this format:
+
+```text
+rule-id path-glob [line]
+```
+
+For example:
+
+```text
+database-url examples/leaky.env 4
+```
+
 ## Example output
 
 ```text
@@ -93,10 +111,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.22"
-      - run: go run ./cmd/open-secret-guard scan . -exclude examples -fail-on-findings
+      - run: go run ./cmd/open-secret-guard scan . -allowlist .open-secret-guard.allowlist -fail-on-findings
 
       # Optional: write SARIF for upload with github/codeql-action/upload-sarif.
-      - run: go run ./cmd/open-secret-guard scan . -exclude examples -format sarif > open-secret-guard.sarif
+      - run: go run ./cmd/open-secret-guard scan . -allowlist .open-secret-guard.allowlist -format sarif > open-secret-guard.sarif
 ```
 
 ## Project status
@@ -105,7 +123,6 @@ This project is intentionally small and early. The first goal is to provide a cl
 
 Planned improvements:
 
-- configurable allowlists;
 - `.env.example` generation;
 - more provider-specific token patterns;
 - pre-commit hook examples.

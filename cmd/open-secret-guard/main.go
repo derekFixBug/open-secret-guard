@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/derekFixBug/open-secret-guard/internal/allowlist"
 	"github.com/derekFixBug/open-secret-guard/internal/sarif"
 	"github.com/derekFixBug/open-secret-guard/internal/scanner"
 )
@@ -44,6 +45,7 @@ func runScan(args []string) error {
 	failOnFindings := flags.Bool("fail-on-findings", false, "exit with a non-zero status when findings are detected")
 	includeHidden := flags.Bool("include-hidden", false, "scan hidden files and directories")
 	exclude := flags.String("exclude", "", "comma-separated file or directory patterns to skip")
+	allowlistPath := flags.String("allowlist", "", "path to an allowlist file")
 
 	normalizedArgs := normalizeScanArgs(args)
 	if err := flags.Parse(normalizedArgs); err != nil {
@@ -55,10 +57,16 @@ func runScan(args []string) error {
 		paths = []string{"."}
 	}
 
+	allowlistMatcher, err := loadAllowlist(*allowlistPath)
+	if err != nil {
+		return err
+	}
+
 	report, err := scanner.Scan(scanner.Options{
 		Paths:         paths,
 		IncludeHidden: *includeHidden,
 		Exclude:       splitCSV(*exclude),
+		Allowlist:     allowlistMatcher,
 	})
 	if err != nil {
 		return err
@@ -111,12 +119,38 @@ func normalizeScanArgs(args []string) []string {
 				index++
 				flagArgs = append(flagArgs, args[index])
 			}
+		case "-allowlist":
+			flagArgs = append(flagArgs, arg)
+			if index+1 < len(args) {
+				index++
+				flagArgs = append(flagArgs, args[index])
+			}
 		default:
 			pathArgs = append(pathArgs, arg)
 		}
 	}
 
 	return append(flagArgs, pathArgs...)
+}
+
+type allowlistMatcher struct {
+	entries []allowlist.Entry
+}
+
+func loadAllowlist(path string) (scanner.Allowlist, error) {
+	if path == "" {
+		return nil, nil
+	}
+
+	entries, err := allowlist.Load(path)
+	if err != nil {
+		return nil, err
+	}
+	return &allowlistMatcher{entries: entries}, nil
+}
+
+func (matcher *allowlistMatcher) IsAllowed(finding scanner.Finding) bool {
+	return allowlist.IsAllowed(finding, matcher.entries)
 }
 
 func splitCSV(value string) []string {
@@ -154,5 +188,6 @@ Flags:
   -format text|json|sarif Output format
   -fail-on-findings       Exit non-zero when findings are detected
   -include-hidden         Scan hidden files and directories
-  -exclude pattern        Comma-separated file or directory patterns to skip`)
+  -exclude pattern        Comma-separated file or directory patterns to skip
+  -allowlist path         Path to an allowlist file`)
 }

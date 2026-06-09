@@ -17,3 +17,9 @@ open-secret-guard is a local CLI and GitHub Action that helps open source mainta
 ## Why the project can use 1Password
 
 The project can use 1Password to store release credentials, test tokens, package publishing credentials, and shared maintainer access without putting secrets in source files or local plaintext notes.
+
+## Activity log
+
+- 2026-06-04: Created the initial Go CLI, scanner rules, tests, CI, README, and MIT license.
+- 2026-06-08: Added SARIF output for GitHub code scanning integrations.
+- 2026-06-09: Added allowlist support for reviewed demo or fixture findings.
