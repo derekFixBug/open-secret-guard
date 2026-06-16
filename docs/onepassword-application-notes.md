@@ -23,3 +23,4 @@ The project can use 1Password to store release credentials, test tokens, package
 - 2026-06-04: Created the initial Go CLI, scanner rules, tests, CI, README, and MIT license.
 - 2026-06-08: Added SARIF output for GitHub code scanning integrations.
 - 2026-06-09: Added allowlist support for reviewed demo or fixture findings.
+- 2026-06-16: Added OpenAI and Anthropic API key detection and hardened scanner fixtures.

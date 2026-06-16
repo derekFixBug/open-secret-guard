@@ -3,6 +3,7 @@ package scanner
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -25,6 +26,33 @@ func TestScanFindsLikelySecrets(t *testing.T) {
 	}
 	if report.Findings[0].RuleID != "github-token" {
 		t.Fatalf("expected github-token, got %q", report.Findings[0].RuleID)
+	}
+}
+
+func TestScanFindsProviderSpecificTokens(t *testing.T) {
+	content := strings.Join([]string{
+		"SLACK_BOT_TOKEN=" + slackTokenFixture(),
+		"STRIPE_SECRET_KEY=" + stripeLiveKeyFixture(),
+		"SENDGRID_API_KEY=" + sendgridKeyFixture(),
+		"GOOGLE_API_KEY=" + googleAPIKeyFixture(),
+		"OPENAI_API_KEY=" + openAIKeyFixture(),
+		"ANTHROPIC_API_KEY=" + anthropicKeyFixture(),
+	}, "\n")
+
+	findings := scanContent("config.env", content)
+	found := findingRuleIDs(findings)
+
+	for _, ruleID := range []string{
+		"slack-token",
+		"stripe-live-secret-key",
+		"sendgrid-api-key",
+		"google-api-key",
+		"openai-api-key",
+		"anthropic-api-key",
+	} {
+		if !found[ruleID] {
+			t.Fatalf("expected %s finding, got %#v", ruleID, findings)
+		}
 	}
 }
 
@@ -90,4 +118,36 @@ func TestScanIncludesHiddenDirectoriesWhenRequested(t *testing.T) {
 
 func assignedTokenFixture() string {
 	return "tok" + "en=" + "super-secret-token-value\n"
+}
+
+func slackTokenFixture() string {
+	return "xox" + "b-123456789012-123456789012-abcdefghijklmnopqrstuvwxyz"
+}
+
+func stripeLiveKeyFixture() string {
+	return "sk_" + "live_" + "1234567890abcdefghijklmn"
+}
+
+func sendgridKeyFixture() string {
+	return "S" + "G." + "abcdefghijklmnop.qrstuvwxyzABCDEF"
+}
+
+func googleAPIKeyFixture() string {
+	return "AI" + "za" + "1234567890abcdefghijklmnopqrstuvwxy"
+}
+
+func openAIKeyFixture() string {
+	return "s" + "k-" + "1234567890abcdefghijklmnopqrstuvwxyzABCDEF"
+}
+
+func anthropicKeyFixture() string {
+	return "s" + "k-" + "ant-" + "1234567890abcdefghijklmnopqrstuvwxyz"
+}
+
+func findingRuleIDs(findings []Finding) map[string]bool {
+	ruleIDs := make(map[string]bool)
+	for _, finding := range findings {
+		ruleIDs[finding.RuleID] = true
+	}
+	return ruleIDs
 }

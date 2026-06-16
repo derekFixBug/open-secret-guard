@@ -62,6 +62,42 @@ var defaultRules = []Rule{
 		Pattern:  regexp.MustCompile(`\bgh[pousr]_[A-Za-z0-9_]{30,}\b`),
 	},
 	{
+		ID:       "slack-token",
+		Severity: "high",
+		Message:  "Slack tokens should be stored in a secret manager, not source files.",
+		Pattern:  regexp.MustCompile(`\bxox[baprs]-[A-Za-z0-9-]{20,}\b`),
+	},
+	{
+		ID:       "stripe-live-secret-key",
+		Severity: "high",
+		Message:  "Stripe live secret keys should not be committed.",
+		Pattern:  regexp.MustCompile(`\bsk_live_[A-Za-z0-9]{24,}\b`),
+	},
+	{
+		ID:       "sendgrid-api-key",
+		Severity: "high",
+		Message:  "SendGrid API keys should not be committed.",
+		Pattern:  regexp.MustCompile(`\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}\b`),
+	},
+	{
+		ID:       "google-api-key",
+		Severity: "high",
+		Message:  "Google API keys should be stored in a secret manager, not source files.",
+		Pattern:  regexp.MustCompile(`\bAIza[0-9A-Za-z_-]{35}\b`),
+	},
+	{
+		ID:       "openai-api-key",
+		Severity: "high",
+		Message:  "OpenAI or OpenAI-compatible API keys should not be committed.",
+		Pattern:  regexp.MustCompile(`\bsk-(proj-[A-Za-z0-9_-]{20,}|[A-Za-z0-9]{32,})\b`),
+	},
+	{
+		ID:       "anthropic-api-key",
+		Severity: "high",
+		Message:  "Anthropic API keys should not be committed.",
+		Pattern:  regexp.MustCompile(`\bsk-ant-[A-Za-z0-9_-]{20,}\b`),
+	},
+	{
 		ID:       "private-key",
 		Severity: "critical",
 		Message:  "Private keys should never be committed to source control.",
