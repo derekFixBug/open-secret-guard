@@ -26,3 +26,18 @@ func TestLoadAllowlistReturnsNilInterfaceWhenUnset(t *testing.T) {
 		t.Fatalf("expected nil matcher, got %#v", matcher)
 	}
 }
+
+func TestNormalizeEnvExampleArgsAllowsOutputAfterPath(t *testing.T) {
+	args := normalizeEnvExampleArgs([]string{".env", "-output", ".env.example"})
+
+	want := []string{"-output", ".env.example", ".env"}
+	if len(args) != len(want) {
+		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
+	}
+
+	for index := range want {
+		if args[index] != want[index] {
+			t.Fatalf("arg %d: expected %q, got %q", index, want[index], args[index])
+		}
+	}
+}

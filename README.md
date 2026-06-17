@@ -83,6 +83,12 @@ For example:
 database-url examples/leaky.env 4
 ```
 
+Generate a safe `.env.example` from a local `.env` file:
+
+```sh
+open-secret-guard env-example .env -output .env.example
+```
+
 ## Example output
 
 ```text
@@ -115,6 +121,7 @@ jobs:
 
       # Optional: write SARIF for upload with github/codeql-action/upload-sarif.
       - run: go run ./cmd/open-secret-guard scan . -allowlist .open-secret-guard.allowlist -format sarif > open-secret-guard.sarif
+      - run: go run ./cmd/open-secret-guard env-example examples/leaky.env > /tmp/leaky.env.example
 ```
 
 ## Project status
@@ -123,7 +130,6 @@ This project is intentionally small and early. The first goal is to provide a cl
 
 Planned improvements:
 
-- `.env.example` generation;
 - more provider-specific token patterns;
 - pre-commit hook examples.
 

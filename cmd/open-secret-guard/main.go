@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/derekFixBug/open-secret-guard/internal/allowlist"
+	"github.com/derekFixBug/open-secret-guard/internal/envexample"
 	"github.com/derekFixBug/open-secret-guard/internal/sarif"
 	"github.com/derekFixBug/open-secret-guard/internal/scanner"
 )
@@ -27,6 +28,8 @@ func run(args []string) error {
 	}
 
 	switch args[0] {
+	case "env-example":
+		return runEnvExample(args[1:])
 	case "scan":
 		return runScan(args[1:])
 	case "help", "-h", "--help":
@@ -35,6 +38,40 @@ func run(args []string) error {
 	default:
 		return fmt.Errorf("unknown command %q", args[0])
 	}
+}
+
+func runEnvExample(args []string) error {
+	flags := flag.NewFlagSet("env-example", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+
+	outputPath := flags.String("output", "", "path to write the generated .env.example")
+	normalizedArgs := normalizeEnvExampleArgs(args)
+	if err := flags.Parse(normalizedArgs); err != nil {
+		return err
+	}
+
+	paths := flags.Args()
+	if len(paths) != 1 {
+		return errors.New("env-example requires exactly one input file")
+	}
+
+	inputPath := paths[0]
+	if *outputPath == inputPath {
+		return errors.New("output path must be different from input path")
+	}
+
+	content, err := os.ReadFile(inputPath)
+	if err != nil {
+		return err
+	}
+
+	generated := envexample.Generate(string(content))
+	if *outputPath == "" {
+		fmt.Print(generated)
+		return nil
+	}
+
+	return os.WriteFile(*outputPath, []byte(generated), 0o644)
 }
 
 func runScan(args []string) error {
@@ -133,6 +170,27 @@ func normalizeScanArgs(args []string) []string {
 	return append(flagArgs, pathArgs...)
 }
 
+func normalizeEnvExampleArgs(args []string) []string {
+	var flagArgs []string
+	var pathArgs []string
+
+	for index := 0; index < len(args); index++ {
+		arg := args[index]
+		switch arg {
+		case "-output":
+			flagArgs = append(flagArgs, arg)
+			if index+1 < len(args) {
+				index++
+				flagArgs = append(flagArgs, args[index])
+			}
+		default:
+			pathArgs = append(pathArgs, arg)
+		}
+	}
+
+	return append(flagArgs, pathArgs...)
+}
+
 type allowlistMatcher struct {
 	entries []allowlist.Entry
 }
@@ -182,6 +240,7 @@ func printUsage() {
 	fmt.Println(`open-secret-guard
 
 Usage:
+  open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard scan [path ...] [flags]
 
 Flags:

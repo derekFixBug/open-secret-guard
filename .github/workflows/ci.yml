@@ -16,3 +16,4 @@ jobs:
       - run: go test ./...
       - run: go run ./cmd/open-secret-guard scan . -allowlist .open-secret-guard.allowlist -fail-on-findings
       - run: go run ./cmd/open-secret-guard scan . -allowlist .open-secret-guard.allowlist -format sarif > open-secret-guard.sarif
+      - run: go run ./cmd/open-secret-guard env-example examples/leaky.env > /tmp/leaky.env.example
