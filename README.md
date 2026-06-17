@@ -89,6 +89,12 @@ Generate a safe `.env.example` from a local `.env` file:
 open-secret-guard env-example .env -output .env.example
 ```
 
+Generate a local pre-commit hook:
+
+```sh
+open-secret-guard install-hook -allowlist .open-secret-guard.allowlist -output .git/hooks/pre-commit
+```
+
 ## Example output
 
 ```text
@@ -122,6 +128,7 @@ jobs:
       # Optional: write SARIF for upload with github/codeql-action/upload-sarif.
       - run: go run ./cmd/open-secret-guard scan . -allowlist .open-secret-guard.allowlist -format sarif > open-secret-guard.sarif
       - run: go run ./cmd/open-secret-guard env-example examples/leaky.env > /tmp/leaky.env.example
+      - run: go run ./cmd/open-secret-guard install-hook -allowlist .open-secret-guard.allowlist > /tmp/pre-commit
 ```
 
 ## Project status
@@ -130,8 +137,7 @@ This project is intentionally small and early. The first goal is to provide a cl
 
 Planned improvements:
 
-- more provider-specific token patterns;
-- pre-commit hook examples.
+- more provider-specific token patterns.
 
 ## License
 

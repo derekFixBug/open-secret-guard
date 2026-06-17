@@ -10,6 +10,7 @@ import (
 
 	"github.com/derekFixBug/open-secret-guard/internal/allowlist"
 	"github.com/derekFixBug/open-secret-guard/internal/envexample"
+	"github.com/derekFixBug/open-secret-guard/internal/hook"
 	"github.com/derekFixBug/open-secret-guard/internal/sarif"
 	"github.com/derekFixBug/open-secret-guard/internal/scanner"
 )
@@ -30,6 +31,8 @@ func run(args []string) error {
 	switch args[0] {
 	case "env-example":
 		return runEnvExample(args[1:])
+	case "install-hook":
+		return runInstallHook(args[1:])
 	case "scan":
 		return runScan(args[1:])
 	case "help", "-h", "--help":
@@ -38,6 +41,35 @@ func run(args []string) error {
 	default:
 		return fmt.Errorf("unknown command %q", args[0])
 	}
+}
+
+func runInstallHook(args []string) error {
+	flags := flag.NewFlagSet("install-hook", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+
+	outputPath := flags.String("output", "", "path to write the generated pre-commit hook")
+	command := flags.String("command", "open-secret-guard", "command used inside the generated hook")
+	allowlistPath := flags.String("allowlist", "", "allowlist path used inside the generated hook")
+
+	normalizedArgs := normalizeInstallHookArgs(args)
+	if err := flags.Parse(normalizedArgs); err != nil {
+		return err
+	}
+
+	if flags.NArg() != 0 {
+		return errors.New("install-hook does not accept positional arguments")
+	}
+
+	content := hook.PreCommit(hook.Options{
+		Command:       *command,
+		AllowlistPath: *allowlistPath,
+	})
+	if *outputPath == "" {
+		fmt.Print(content)
+		return nil
+	}
+
+	return os.WriteFile(*outputPath, []byte(content), 0o755)
 }
 
 func runEnvExample(args []string) error {
@@ -191,6 +223,27 @@ func normalizeEnvExampleArgs(args []string) []string {
 	return append(flagArgs, pathArgs...)
 }
 
+func normalizeInstallHookArgs(args []string) []string {
+	var flagArgs []string
+	var pathArgs []string
+
+	for index := 0; index < len(args); index++ {
+		arg := args[index]
+		switch arg {
+		case "-output", "-command", "-allowlist":
+			flagArgs = append(flagArgs, arg)
+			if index+1 < len(args) {
+				index++
+				flagArgs = append(flagArgs, args[index])
+			}
+		default:
+			pathArgs = append(pathArgs, arg)
+		}
+	}
+
+	return append(flagArgs, pathArgs...)
+}
+
 type allowlistMatcher struct {
 	entries []allowlist.Entry
 }
@@ -241,6 +294,7 @@ func printUsage() {
 
 Usage:
   open-secret-guard env-example <env-file> [-output .env.example]
+  open-secret-guard install-hook [-output .git/hooks/pre-commit]
   open-secret-guard scan [path ...] [flags]
 
 Flags:

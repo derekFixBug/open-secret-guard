@@ -25,3 +25,4 @@ The project can use 1Password to store release credentials, test tokens, package
 - 2026-06-09: Added allowlist support for reviewed demo or fixture findings.
 - 2026-06-16: Added OpenAI and Anthropic API key detection and hardened scanner fixtures.
 - 2026-06-17: Added `.env.example` generation for safer configuration documentation.
+- 2026-06-17: Added pre-commit hook generation for local secret checks.

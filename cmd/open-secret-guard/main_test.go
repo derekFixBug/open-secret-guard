@@ -41,3 +41,18 @@ func TestNormalizeEnvExampleArgsAllowsOutputAfterPath(t *testing.T) {
 		}
 	}
 }
+
+func TestNormalizeInstallHookArgsAllowsFlagsInAnyOrder(t *testing.T) {
+	args := normalizeInstallHookArgs([]string{"-allowlist", ".open-secret-guard.allowlist", "-output", ".git/hooks/pre-commit"})
+
+	want := []string{"-allowlist", ".open-secret-guard.allowlist", "-output", ".git/hooks/pre-commit"}
+	if len(args) != len(want) {
+		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
+	}
+
+	for index := range want {
+		if args[index] != want[index] {
+			t.Fatalf("arg %d: expected %q, got %q", index, want[index], args[index])
+		}
+	}
+}
