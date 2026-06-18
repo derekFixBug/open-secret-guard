@@ -56,3 +56,9 @@ func TestNormalizeInstallHookArgsAllowsFlagsInAnyOrder(t *testing.T) {
 		}
 	}
 }
+
+func TestRunRulesRejectsArguments(t *testing.T) {
+	if err := runRules([]string{"extra"}); err == nil {
+		t.Fatal("expected rules command to reject arguments")
+	}
+}

@@ -83,6 +83,12 @@ For example:
 database-url examples/leaky.env 4
 ```
 
+List the built-in rule IDs, severity levels, and descriptions:
+
+```sh
+open-secret-guard rules
+```
+
 Generate a safe `.env.example` from a local `.env` file:
 
 ```sh

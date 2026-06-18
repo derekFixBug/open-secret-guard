@@ -48,6 +48,12 @@ type Rule struct {
 	Pattern  *regexp.Regexp
 }
 
+type RuleMetadata struct {
+	ID       string `json:"id"`
+	Severity string `json:"severity"`
+	Message  string `json:"message"`
+}
+
 var defaultRules = []Rule{
 	{
 		ID:       "aws-access-key",
@@ -115,6 +121,18 @@ var defaultRules = []Rule{
 		Message:  "Database URLs with inline credentials should be kept out of source files.",
 		Pattern:  regexp.MustCompile(`(?i)\b(postgres|postgresql|mysql|mongodb|redis)://[^/\s:@]+:[^/\s:@]+@`),
 	},
+}
+
+func Rules() []RuleMetadata {
+	rules := make([]RuleMetadata, 0, len(defaultRules))
+	for _, rule := range defaultRules {
+		rules = append(rules, RuleMetadata{
+			ID:       rule.ID,
+			Severity: rule.Severity,
+			Message:  rule.Message,
+		})
+	}
+	return rules
 }
 
 var skippedDirs = map[string]bool{

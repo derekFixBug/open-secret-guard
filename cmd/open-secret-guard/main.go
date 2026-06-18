@@ -33,6 +33,8 @@ func run(args []string) error {
 		return runEnvExample(args[1:])
 	case "install-hook":
 		return runInstallHook(args[1:])
+	case "rules":
+		return runRules(args[1:])
 	case "scan":
 		return runScan(args[1:])
 	case "help", "-h", "--help":
@@ -41,6 +43,17 @@ func run(args []string) error {
 	default:
 		return fmt.Errorf("unknown command %q", args[0])
 	}
+}
+
+func runRules(args []string) error {
+	if len(args) != 0 {
+		return errors.New("rules does not accept arguments")
+	}
+
+	for _, rule := range scanner.Rules() {
+		fmt.Printf("%s\t%s\t%s\n", rule.ID, rule.Severity, rule.Message)
+	}
+	return nil
 }
 
 func runInstallHook(args []string) error {
@@ -295,6 +308,7 @@ func printUsage() {
 Usage:
   open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard install-hook [-output .git/hooks/pre-commit]
+  open-secret-guard rules
   open-secret-guard scan [path ...] [flags]
 
 Flags:

@@ -7,6 +7,22 @@ import (
 	"testing"
 )
 
+func TestRulesReturnsPublicMetadata(t *testing.T) {
+	rules := Rules()
+	if len(rules) != len(defaultRules) {
+		t.Fatalf("expected %d rules, got %d", len(defaultRules), len(rules))
+	}
+
+	for index, rule := range rules {
+		if rule.ID != defaultRules[index].ID {
+			t.Fatalf("rule %d: expected ID %q, got %q", index, defaultRules[index].ID, rule.ID)
+		}
+		if rule.Severity == "" || rule.Message == "" {
+			t.Fatalf("rule %q has incomplete metadata: %#v", rule.ID, rule)
+		}
+	}
+}
+
 func TestScanFindsLikelySecrets(t *testing.T) {
 	dir := t.TempDir()
 	target := filepath.Join(dir, ".env")
