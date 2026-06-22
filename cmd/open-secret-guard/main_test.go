@@ -62,3 +62,9 @@ func TestRunRulesRejectsArguments(t *testing.T) {
 		t.Fatal("expected rules command to reject arguments")
 	}
 }
+
+func TestRunRulesRejectsUnsupportedFormat(t *testing.T) {
+	if err := runRules([]string{"-format", "yaml"}); err == nil {
+		t.Fatal("expected rules command to reject unsupported format")
+	}
+}

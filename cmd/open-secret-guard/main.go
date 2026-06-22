@@ -46,12 +46,29 @@ func run(args []string) error {
 }
 
 func runRules(args []string) error {
-	if len(args) != 0 {
-		return errors.New("rules does not accept arguments")
+	flags := flag.NewFlagSet("rules", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+
+	format := flags.String("format", "text", "output format: text or json")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 {
+		return errors.New("rules does not accept positional arguments")
 	}
 
-	for _, rule := range scanner.Rules() {
-		fmt.Printf("%s\t%s\t%s\n", rule.ID, rule.Severity, rule.Message)
+	rules := scanner.Rules()
+	switch *format {
+	case "text":
+		for _, rule := range rules {
+			fmt.Printf("%s\t%s\t%s\n", rule.ID, rule.Severity, rule.Message)
+		}
+	case "json":
+		encoder := json.NewEncoder(os.Stdout)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(rules)
+	default:
+		return fmt.Errorf("unsupported format %q", *format)
 	}
 	return nil
 }
@@ -308,7 +325,7 @@ func printUsage() {
 Usage:
   open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard install-hook [-output .git/hooks/pre-commit]
-  open-secret-guard rules
+  open-secret-guard rules [-format text|json]
   open-secret-guard scan [path ...] [flags]
 
 Flags:

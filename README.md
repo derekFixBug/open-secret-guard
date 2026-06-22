@@ -89,6 +89,12 @@ List the built-in rule IDs, severity levels, and descriptions:
 open-secret-guard rules
 ```
 
+Return the rule metadata as JSON for scripts or CI configuration:
+
+```sh
+open-secret-guard rules -format json
+```
+
 Generate a safe `.env.example` from a local `.env` file:
 
 ```sh
