@@ -104,6 +104,12 @@ var defaultRules = []Rule{
 		Pattern:  regexp.MustCompile(`\bsk-ant-[A-Za-z0-9_-]{20,}\b`),
 	},
 	{
+		ID:       "npm-access-token",
+		Severity: "high",
+		Message:  "npm access tokens should not be committed.",
+		Pattern:  regexp.MustCompile(`\bnpm_[A-Za-z0-9]{36}\b`),
+	},
+	{
 		ID:       "private-key",
 		Severity: "critical",
 		Message:  "Private keys should never be committed to source control.",
