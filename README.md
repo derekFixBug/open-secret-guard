@@ -2,7 +2,7 @@
 
 `open-secret-guard` is a small local CLI for open source maintainers who want to catch accidental secret leaks before they reach a public repository.
 
-It scans source files for common high-risk patterns such as GitHub tokens, AWS access key identifiers, package registry tokens, private key headers, database URLs with inline credentials, and suspicious secret assignments.
+It scans source files for common high-risk patterns such as GitHub and GitLab tokens, AWS access key identifiers, package registry tokens, private key headers, database URLs with inline credentials, and suspicious secret assignments.
 
 ## Why this exists
 

@@ -68,6 +68,12 @@ var defaultRules = []Rule{
 		Pattern:  regexp.MustCompile(`\bgh[pousr]_[A-Za-z0-9_]{30,}\b`),
 	},
 	{
+		ID:       "gitlab-token",
+		Severity: "high",
+		Message:  "GitLab tokens should be stored in a secret manager, not source files.",
+		Pattern:  regexp.MustCompile(`\bglpat-[A-Za-z0-9_-]{20}\b`),
+	},
+	{
 		ID:       "slack-token",
 		Severity: "high",
 		Message:  "Slack tokens should be stored in a secret manager, not source files.",

@@ -47,6 +47,7 @@ func TestScanFindsLikelySecrets(t *testing.T) {
 
 func TestScanFindsProviderSpecificTokens(t *testing.T) {
 	content := strings.Join([]string{
+		"GITLAB_TOKEN=" + gitlabTokenFixture(),
 		"SLACK_BOT_TOKEN=" + slackTokenFixture(),
 		"STRIPE_SECRET_KEY=" + stripeLiveKeyFixture(),
 		"SENDGRID_API_KEY=" + sendgridKeyFixture(),
@@ -60,6 +61,7 @@ func TestScanFindsProviderSpecificTokens(t *testing.T) {
 	found := findingRuleIDs(findings)
 
 	for _, ruleID := range []string{
+		"gitlab-token",
 		"slack-token",
 		"stripe-live-secret-key",
 		"sendgrid-api-key",
@@ -140,6 +142,10 @@ func assignedTokenFixture() string {
 
 func slackTokenFixture() string {
 	return "xox" + "b-123456789012-123456789012-abcdefghijklmnopqrstuvwxyz"
+}
+
+func gitlabTokenFixture() string {
+	return "gl" + "pat-1234567890abcdefghij"
 }
 
 func stripeLiveKeyFixture() string {
