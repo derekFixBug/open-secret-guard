@@ -55,6 +55,7 @@ func TestScanFindsProviderSpecificTokens(t *testing.T) {
 		"OPENAI_API_KEY=" + openAIKeyFixture(),
 		"ANTHROPIC_API_KEY=" + anthropicKeyFixture(),
 		"NPM_TOKEN=" + npmAccessTokenFixture(),
+		"TERRAFORM_TOKEN=" + terraformCloudTokenFixture(),
 		"SESSION_TOKEN=" + jwtTokenFixture(),
 	}, "\n")
 
@@ -70,6 +71,7 @@ func TestScanFindsProviderSpecificTokens(t *testing.T) {
 		"openai-api-key",
 		"anthropic-api-key",
 		"npm-access-token",
+		"terraform-cloud-token",
 		"jwt-token",
 	} {
 		if !found[ruleID] {
@@ -172,6 +174,11 @@ func anthropicKeyFixture() string {
 
 func npmAccessTokenFixture() string {
 	return "n" + "pm_" + "1234567890abcdefghijklmnopqrstuvwxyz"
+}
+
+func terraformCloudTokenFixture() string {
+	return "1234567890abcd" + "." + "atlasv1" + "." +
+		"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ12345"
 }
 
 func jwtTokenFixture() string {

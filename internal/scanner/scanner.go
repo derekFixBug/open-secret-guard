@@ -116,6 +116,12 @@ var defaultRules = []Rule{
 		Pattern:  regexp.MustCompile(`\bnpm_[A-Za-z0-9]{36}\b`),
 	},
 	{
+		ID:       "terraform-cloud-token",
+		Severity: "high",
+		Message:  "Terraform Cloud tokens should not be committed.",
+		Pattern:  regexp.MustCompile(`\b[A-Za-z0-9]{14}\.atlasv1\.[A-Za-z0-9_-]{67}\b`),
+	},
+	{
 		ID:       "jwt-token",
 		Severity: "high",
 		Message:  "JWT bearer tokens should not be committed.",
