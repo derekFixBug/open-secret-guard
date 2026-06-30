@@ -116,6 +116,12 @@ var defaultRules = []Rule{
 		Pattern:  regexp.MustCompile(`\bnpm_[A-Za-z0-9]{36}\b`),
 	},
 	{
+		ID:       "jwt-token",
+		Severity: "high",
+		Message:  "JWT bearer tokens should not be committed.",
+		Pattern:  regexp.MustCompile(`\beyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b`),
+	},
+	{
 		ID:       "private-key",
 		Severity: "critical",
 		Message:  "Private keys should never be committed to source control.",

@@ -55,6 +55,7 @@ func TestScanFindsProviderSpecificTokens(t *testing.T) {
 		"OPENAI_API_KEY=" + openAIKeyFixture(),
 		"ANTHROPIC_API_KEY=" + anthropicKeyFixture(),
 		"NPM_TOKEN=" + npmAccessTokenFixture(),
+		"SESSION_TOKEN=" + jwtTokenFixture(),
 	}, "\n")
 
 	findings := scanContent("config.env", content)
@@ -69,6 +70,7 @@ func TestScanFindsProviderSpecificTokens(t *testing.T) {
 		"openai-api-key",
 		"anthropic-api-key",
 		"npm-access-token",
+		"jwt-token",
 	} {
 		if !found[ruleID] {
 			t.Fatalf("expected %s finding, got %#v", ruleID, findings)
@@ -170,6 +172,10 @@ func anthropicKeyFixture() string {
 
 func npmAccessTokenFixture() string {
 	return "n" + "pm_" + "1234567890abcdefghijklmnopqrstuvwxyz"
+}
+
+func jwtTokenFixture() string {
+	return "ey" + "JhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature123456"
 }
 
 func findingRuleIDs(findings []Finding) map[string]bool {
