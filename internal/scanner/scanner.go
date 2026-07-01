@@ -80,6 +80,12 @@ var defaultRules = []Rule{
 		Pattern:  regexp.MustCompile(`\bxox[baprs]-[A-Za-z0-9-]{20,}\b`),
 	},
 	{
+		ID:       "discord-bot-token",
+		Severity: "high",
+		Message:  "Discord bot tokens should not be committed.",
+		Pattern:  regexp.MustCompile(`\b[MN][A-Za-z0-9_-]{23}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27}\b`),
+	},
+	{
 		ID:       "stripe-live-secret-key",
 		Severity: "high",
 		Message:  "Stripe live secret keys should not be committed.",
