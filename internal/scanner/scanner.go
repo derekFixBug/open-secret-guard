@@ -116,6 +116,12 @@ var defaultRules = []Rule{
 		Pattern:  regexp.MustCompile(`\bsk-ant-[A-Za-z0-9_-]{20,}\b`),
 	},
 	{
+		ID:       "huggingface-token",
+		Severity: "high",
+		Message:  "Hugging Face access tokens should not be committed.",
+		Pattern:  regexp.MustCompile(`\bhf_[A-Za-z0-9]{34,}\b`),
+	},
+	{
 		ID:       "npm-access-token",
 		Severity: "high",
 		Message:  "npm access tokens should not be committed.",

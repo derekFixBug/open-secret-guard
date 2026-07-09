@@ -55,6 +55,7 @@ func TestScanFindsProviderSpecificTokens(t *testing.T) {
 		"GOOGLE_API_KEY=" + googleAPIKeyFixture(),
 		"OPENAI_API_KEY=" + openAIKeyFixture(),
 		"ANTHROPIC_API_KEY=" + anthropicKeyFixture(),
+		"HUGGINGFACE_TOKEN=" + huggingFaceTokenFixture(),
 		"NPM_TOKEN=" + npmAccessTokenFixture(),
 		"TERRAFORM_TOKEN=" + terraformCloudTokenFixture(),
 		"SESSION_TOKEN=" + jwtTokenFixture(),
@@ -72,6 +73,7 @@ func TestScanFindsProviderSpecificTokens(t *testing.T) {
 		"google-api-key",
 		"openai-api-key",
 		"anthropic-api-key",
+		"huggingface-token",
 		"npm-access-token",
 		"terraform-cloud-token",
 		"jwt-token",
@@ -176,6 +178,10 @@ func openAIKeyFixture() string {
 
 func anthropicKeyFixture() string {
 	return "s" + "k-" + "ant-" + "1234567890abcdefghijklmnopqrstuvwxyz"
+}
+
+func huggingFaceTokenFixture() string {
+	return "h" + "f_" + "1234567890abcdefghijklmnopqrstuvwx"
 }
 
 func npmAccessTokenFixture() string {
