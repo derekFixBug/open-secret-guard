@@ -53,6 +53,12 @@ Fail CI when findings are detected:
 open-secret-guard scan . -fail-on-findings
 ```
 
+Only report high and critical findings:
+
+```sh
+open-secret-guard scan . -min-severity high
+```
+
 Scan hidden files and directories:
 
 ```sh

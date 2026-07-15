@@ -145,6 +145,7 @@ func runScan(args []string) error {
 	includeHidden := flags.Bool("include-hidden", false, "scan hidden files and directories")
 	exclude := flags.String("exclude", "", "comma-separated file or directory patterns to skip")
 	allowlistPath := flags.String("allowlist", "", "path to an allowlist file")
+	minSeverity := flags.String("min-severity", "", "minimum severity to report: low, medium, high, or critical")
 
 	normalizedArgs := normalizeScanArgs(args)
 	if err := flags.Parse(normalizedArgs); err != nil {
@@ -167,6 +168,10 @@ func runScan(args []string) error {
 		Exclude:       splitCSV(*exclude),
 		Allowlist:     allowlistMatcher,
 	})
+	if err != nil {
+		return err
+	}
+	report, err = filterReportBySeverity(report, *minSeverity)
 	if err != nil {
 		return err
 	}
@@ -218,7 +223,7 @@ func normalizeScanArgs(args []string) []string {
 				index++
 				flagArgs = append(flagArgs, args[index])
 			}
-		case "-allowlist":
+		case "-allowlist", "-min-severity":
 			flagArgs = append(flagArgs, arg)
 			if index+1 < len(args) {
 				index++
@@ -305,6 +310,42 @@ func splitCSV(value string) []string {
 	return values
 }
 
+func filterReportBySeverity(report scanner.Report, minSeverity string) (scanner.Report, error) {
+	if minSeverity == "" {
+		return report, nil
+	}
+
+	minRank, ok := severityRank(minSeverity)
+	if !ok {
+		return report, fmt.Errorf("unsupported minimum severity %q", minSeverity)
+	}
+
+	filtered := report.Findings[:0]
+	for _, finding := range report.Findings {
+		rank, ok := severityRank(finding.Severity)
+		if ok && rank >= minRank {
+			filtered = append(filtered, finding)
+		}
+	}
+	report.Findings = filtered
+	return report, nil
+}
+
+func severityRank(severity string) (int, bool) {
+	switch severity {
+	case "low":
+		return 1, true
+	case "medium":
+		return 2, true
+	case "high":
+		return 3, true
+	case "critical":
+		return 4, true
+	default:
+		return 0, false
+	}
+}
+
 func printTextReport(report scanner.Report) {
 	if len(report.Findings) == 0 {
 		fmt.Println("No likely secrets found.")
@@ -331,6 +372,7 @@ Usage:
 Flags:
   -format text|json|sarif Output format
   -fail-on-findings       Exit non-zero when findings are detected
+  -min-severity level     Only report findings at or above low|medium|high|critical
   -include-hidden         Scan hidden files and directories
   -exclude pattern        Comma-separated file or directory patterns to skip
   -allowlist path         Path to an allowlist file`)
