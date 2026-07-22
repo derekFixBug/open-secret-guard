@@ -65,7 +65,7 @@ var defaultRules = []Rule{
 		ID:       "github-token",
 		Severity: "high",
 		Message:  "GitHub tokens should be stored in a secret manager, not source files.",
-		Pattern:  regexp.MustCompile(`\bgh[pousr]_[A-Za-z0-9_]{30,}\b`),
+		Pattern:  regexp.MustCompile(`\b(gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{20,})\b`),
 	},
 	{
 		ID:       "gitlab-token",
@@ -78,6 +78,12 @@ var defaultRules = []Rule{
 		Severity: "high",
 		Message:  "Slack tokens should be stored in a secret manager, not source files.",
 		Pattern:  regexp.MustCompile(`\bxox[baprs]-[A-Za-z0-9-]{20,}\b`),
+	},
+	{
+		ID:       "slack-webhook",
+		Severity: "high",
+		Message:  "Slack incoming webhook URLs should not be committed.",
+		Pattern:  regexp.MustCompile(`https://hooks\.slack\.com/services/T[A-Z0-9]+/B[A-Z0-9]+/[A-Za-z0-9]+`),
 	},
 	{
 		ID:       "discord-bot-token",
@@ -126,6 +132,24 @@ var defaultRules = []Rule{
 		Severity: "high",
 		Message:  "npm access tokens should not be committed.",
 		Pattern:  regexp.MustCompile(`\bnpm_[A-Za-z0-9]{36}\b`),
+	},
+	{
+		ID:       "pypi-token",
+		Severity: "high",
+		Message:  "PyPI API tokens should not be committed.",
+		Pattern:  regexp.MustCompile(`\bpypi-AgEIcHlwaS5vcmc[A-Za-z0-9_-]{20,}\b`),
+	},
+	{
+		ID:       "digitalocean-token",
+		Severity: "high",
+		Message:  "DigitalOcean API tokens should not be committed.",
+		Pattern:  regexp.MustCompile(`\bdo[opr]_v1_[a-f0-9]{64}\b`),
+	},
+	{
+		ID:       "shopify-access-token",
+		Severity: "high",
+		Message:  "Shopify access tokens should not be committed.",
+		Pattern:  regexp.MustCompile(`\bshp(at|ca|pa|ss)_[a-fA-F0-9]{32}\b`),
 	},
 	{
 		ID:       "terraform-cloud-token",

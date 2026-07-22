@@ -47,8 +47,10 @@ func TestScanFindsLikelySecrets(t *testing.T) {
 
 func TestScanFindsProviderSpecificTokens(t *testing.T) {
 	content := strings.Join([]string{
+		"GITHUB_FINE_GRAINED=" + githubFineGrainedTokenFixture(),
 		"GITLAB_TOKEN=" + gitlabTokenFixture(),
 		"SLACK_BOT_TOKEN=" + slackTokenFixture(),
+		"SLACK_WEBHOOK_URL=" + slackWebhookFixture(),
 		"DISCORD_BOT_TOKEN=" + discordBotTokenFixture(),
 		"STRIPE_SECRET_KEY=" + stripeLiveKeyFixture(),
 		"SENDGRID_API_KEY=" + sendgridKeyFixture(),
@@ -57,6 +59,9 @@ func TestScanFindsProviderSpecificTokens(t *testing.T) {
 		"ANTHROPIC_API_KEY=" + anthropicKeyFixture(),
 		"HUGGINGFACE_TOKEN=" + huggingFaceTokenFixture(),
 		"NPM_TOKEN=" + npmAccessTokenFixture(),
+		"PYPI_TOKEN=" + pypiTokenFixture(),
+		"DIGITALOCEAN_TOKEN=" + digitalOceanTokenFixture(),
+		"SHOPIFY_ACCESS_TOKEN=" + shopifyAccessTokenFixture(),
 		"TERRAFORM_TOKEN=" + terraformCloudTokenFixture(),
 		"SESSION_TOKEN=" + jwtTokenFixture(),
 	}, "\n")
@@ -65,8 +70,10 @@ func TestScanFindsProviderSpecificTokens(t *testing.T) {
 	found := findingRuleIDs(findings)
 
 	for _, ruleID := range []string{
+		"github-token",
 		"gitlab-token",
 		"slack-token",
+		"slack-webhook",
 		"discord-bot-token",
 		"stripe-live-secret-key",
 		"sendgrid-api-key",
@@ -75,6 +82,9 @@ func TestScanFindsProviderSpecificTokens(t *testing.T) {
 		"anthropic-api-key",
 		"huggingface-token",
 		"npm-access-token",
+		"pypi-token",
+		"digitalocean-token",
+		"shopify-access-token",
 		"terraform-cloud-token",
 		"jwt-token",
 	} {
@@ -152,8 +162,28 @@ func slackTokenFixture() string {
 	return "xox" + "b-123456789012-123456789012-abcdefghijklmnopqrstuvwxyz"
 }
 
+func slackWebhookFixture() string {
+	return "https://hooks." + "slack.com/services/T01234567/B01234567/abcdefghijklmnopqrstuvwx"
+}
+
+func githubFineGrainedTokenFixture() string {
+	return "github" + "_pat_" + "11AAAAAAA0abcdefghijklmnopqrstuvwxyzABCDEF"
+}
+
 func gitlabTokenFixture() string {
 	return "gl" + "pat-1234567890abcdefghij"
+}
+
+func pypiTokenFixture() string {
+	return "pypi-" + "AgEIcHlwaS5vcmc" + "abcdefghijklmnopqrstuvwxyzABCDEF"
+}
+
+func digitalOceanTokenFixture() string {
+	return "dop" + "_v1_" + "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+}
+
+func shopifyAccessTokenFixture() string {
+	return "shp" + "at_" + "0123456789abcdef0123456789abcdef"
 }
 
 func discordBotTokenFixture() string {
