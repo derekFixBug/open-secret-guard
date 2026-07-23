@@ -29,3 +29,4 @@ The project can use 1Password to store release credentials, test tokens, package
 - 2026-07-09: Added SECURITY.md for private vulnerability reporting guidance.
 - 2026-07-15: Added minimum severity filtering for scan output and CI gates.
 - 2026-07-22: Extended detection for GitHub fine-grained PATs, Slack webhooks, PyPI, DigitalOcean, and Shopify tokens.
+- 2026-07-23: Added `-only-rules` filtering so scans can focus on selected rule IDs.

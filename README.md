@@ -59,6 +59,12 @@ Only report high and critical findings:
 open-secret-guard scan . -min-severity high
 ```
 
+Only report selected rule IDs:
+
+```sh
+open-secret-guard scan . -only-rules github-token,private-key
+```
+
 Scan hidden files and directories:
 
 ```sh

@@ -146,6 +146,7 @@ func runScan(args []string) error {
 	exclude := flags.String("exclude", "", "comma-separated file or directory patterns to skip")
 	allowlistPath := flags.String("allowlist", "", "path to an allowlist file")
 	minSeverity := flags.String("min-severity", "", "minimum severity to report: low, medium, high, or critical")
+	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs to include in the report")
 
 	normalizedArgs := normalizeScanArgs(args)
 	if err := flags.Parse(normalizedArgs); err != nil {
@@ -168,6 +169,10 @@ func runScan(args []string) error {
 		Exclude:       splitCSV(*exclude),
 		Allowlist:     allowlistMatcher,
 	})
+	if err != nil {
+		return err
+	}
+	report, err = filterReportByRules(report, *onlyRules)
 	if err != nil {
 		return err
 	}
@@ -223,7 +228,7 @@ func normalizeScanArgs(args []string) []string {
 				index++
 				flagArgs = append(flagArgs, args[index])
 			}
-		case "-allowlist", "-min-severity":
+		case "-allowlist", "-min-severity", "-only-rules":
 			flagArgs = append(flagArgs, arg)
 			if index+1 < len(args) {
 				index++
@@ -331,6 +336,35 @@ func filterReportBySeverity(report scanner.Report, minSeverity string) (scanner.
 	return report, nil
 }
 
+func filterReportByRules(report scanner.Report, onlyRules string) (scanner.Report, error) {
+	ruleIDs := splitCSV(onlyRules)
+	if len(ruleIDs) == 0 {
+		return report, nil
+	}
+
+	knownRules := make(map[string]bool, len(scanner.Rules()))
+	for _, rule := range scanner.Rules() {
+		knownRules[rule.ID] = true
+	}
+
+	allowedRules := make(map[string]bool, len(ruleIDs))
+	for _, ruleID := range ruleIDs {
+		if !knownRules[ruleID] {
+			return report, fmt.Errorf("unknown rule ID %q", ruleID)
+		}
+		allowedRules[ruleID] = true
+	}
+
+	filtered := report.Findings[:0]
+	for _, finding := range report.Findings {
+		if allowedRules[finding.RuleID] {
+			filtered = append(filtered, finding)
+		}
+	}
+	report.Findings = filtered
+	return report, nil
+}
+
 func severityRank(severity string) (int, bool) {
 	switch severity {
 	case "low":
@@ -373,6 +407,7 @@ Flags:
   -format text|json|sarif Output format
   -fail-on-findings       Exit non-zero when findings are detected
   -min-severity level     Only report findings at or above low|medium|high|critical
+  -only-rules ids         Only report findings for the given comma-separated rule IDs
   -include-hidden         Scan hidden files and directories
   -exclude pattern        Comma-separated file or directory patterns to skip
   -allowlist path         Path to an allowlist file`)

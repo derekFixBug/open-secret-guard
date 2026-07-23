@@ -7,9 +7,9 @@ import (
 )
 
 func TestNormalizeScanArgsAllowsFlagsAfterPaths(t *testing.T) {
-	args := normalizeScanArgs([]string{"examples", "-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-include-hidden"})
+	args := normalizeScanArgs([]string{"examples", "-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-include-hidden"})
 
-	want := []string{"-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-include-hidden", "examples"}
+	want := []string{"-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-include-hidden", "examples"}
 	if len(args) != len(want) {
 		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
 	}
@@ -98,5 +98,49 @@ func TestFilterReportBySeverityKeepsFindingsAtOrAboveThreshold(t *testing.T) {
 func TestFilterReportBySeverityRejectsUnsupportedLevel(t *testing.T) {
 	if _, err := filterReportBySeverity(scanner.Report{}, "urgent"); err == nil {
 		t.Fatal("expected unsupported severity to fail")
+	}
+}
+
+func TestFilterReportByRulesKeepsMatchingRuleIDs(t *testing.T) {
+	report := scanner.Report{
+		Findings: []scanner.Finding{
+			{RuleID: "assigned-secret", Severity: "medium"},
+			{RuleID: "github-token", Severity: "high"},
+			{RuleID: "private-key", Severity: "critical"},
+		},
+	}
+
+	filtered, err := filterReportByRules(report, "github-token, private-key")
+	if err != nil {
+		t.Fatalf("filter report: %v", err)
+	}
+
+	if len(filtered.Findings) != 2 {
+		t.Fatalf("expected 2 findings, got %d: %#v", len(filtered.Findings), filtered.Findings)
+	}
+	if filtered.Findings[0].RuleID != "github-token" || filtered.Findings[1].RuleID != "private-key" {
+		t.Fatalf("unexpected filtered findings: %#v", filtered.Findings)
+	}
+}
+
+func TestFilterReportByRulesRejectsUnknownRuleID(t *testing.T) {
+	if _, err := filterReportByRules(scanner.Report{}, "not-a-real-rule"); err == nil {
+		t.Fatal("expected unknown rule ID to fail")
+	}
+}
+
+func TestFilterReportByRulesAllowsEmptyFilter(t *testing.T) {
+	report := scanner.Report{
+		Findings: []scanner.Finding{
+			{RuleID: "github-token", Severity: "high"},
+		},
+	}
+
+	filtered, err := filterReportByRules(report, "")
+	if err != nil {
+		t.Fatalf("filter report: %v", err)
+	}
+	if len(filtered.Findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d: %#v", len(filtered.Findings), filtered.Findings)
 	}
 }
