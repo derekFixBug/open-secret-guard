@@ -1,0 +1,36 @@
+name: Rule request
+description: Suggest a new provider-specific secret detection rule.
+title: "Rule request: "
+labels: ["scanner", "rule-request"]
+body:
+  - type: input
+    id: provider
+    attributes:
+      label: Provider or secret type
+      placeholder: Example: GitHub, Slack, npm, database URL
+    validations:
+      required: true
+  - type: textarea
+    id: format
+    attributes:
+      label: Token format
+      description: Describe the public token shape using invalid examples only.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Suggested severity
+      options:
+        - low
+        - medium
+        - high
+        - critical
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: Public references
+      description: Link public documentation for the token format if available.

@@ -1,0 +1,31 @@
+name: False negative
+description: Report a secret-like value that open-secret-guard should detect.
+title: "False negative: "
+labels: ["scanner", "false-negative"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please use intentionally invalid sample values only. Do not paste live tokens, private keys, customer data, or private repository contents.
+  - type: textarea
+    id: sample
+    attributes:
+      label: Synthetic sample
+      description: Paste the smallest invalid example that should be detected.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: expected-rule
+    attributes:
+      label: Expected rule ID
+      description: If known, name the existing or proposed rule ID.
+      placeholder: github-token
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Where would this pattern normally appear?
+      placeholder: Environment file, CI variable, SDK config, documentation snippet...
+    validations:
+      required: true

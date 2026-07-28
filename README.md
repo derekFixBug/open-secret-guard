@@ -165,9 +165,19 @@ jobs:
 
 This project is intentionally small and early. The first goal is to provide a clear, auditable baseline for maintainers who want lightweight local checks without sending repository content to a hosted service.
 
+Maintenance docs:
+
+- `ROADMAP.md` tracks near-term work.
+- `CHANGELOG.md` tracks user-visible changes until tagged releases begin.
+- `CONTRIBUTING.md` explains how to add rules safely with synthetic fixtures.
+- `SECURITY.md` explains how to report false negatives, unsafe output behavior, or other security issues privately.
+
 Planned improvements:
 
-- more provider-specific token patterns.
+- more provider-specific token patterns;
+- stronger negative tests for noisy patterns;
+- clearer CI and SARIF documentation;
+- tagged releases once the CLI surface stabilizes.
 
 ## License
 
