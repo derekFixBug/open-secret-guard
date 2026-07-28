@@ -50,6 +50,7 @@ func runRules(args []string) error {
 	flags.SetOutput(os.Stderr)
 
 	format := flags.String("format", "text", "output format: text or json")
+	minSeverity := flags.String("min-severity", "", "minimum severity to list: low, medium, high, or critical")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -58,6 +59,11 @@ func runRules(args []string) error {
 	}
 
 	rules := scanner.Rules()
+	var err error
+	rules, err = filterRulesBySeverity(rules, *minSeverity)
+	if err != nil {
+		return err
+	}
 	switch *format {
 	case "text":
 		for _, rule := range rules {
@@ -365,6 +371,26 @@ func filterReportByRules(report scanner.Report, onlyRules string) (scanner.Repor
 	return report, nil
 }
 
+func filterRulesBySeverity(rules []scanner.RuleMetadata, minSeverity string) ([]scanner.RuleMetadata, error) {
+	if minSeverity == "" {
+		return rules, nil
+	}
+
+	minRank, ok := severityRank(minSeverity)
+	if !ok {
+		return rules, fmt.Errorf("unsupported minimum severity %q", minSeverity)
+	}
+
+	filtered := rules[:0]
+	for _, rule := range rules {
+		rank, ok := severityRank(rule.Severity)
+		if ok && rank >= minRank {
+			filtered = append(filtered, rule)
+		}
+	}
+	return filtered, nil
+}
+
 func severityRank(severity string) (int, bool) {
 	switch severity {
 	case "low":
@@ -400,7 +426,7 @@ func printUsage() {
 Usage:
   open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard install-hook [-output .git/hooks/pre-commit]
-  open-secret-guard rules [-format text|json]
+  open-secret-guard rules [-format text|json] [-min-severity low|medium|high|critical]
   open-secret-guard scan [path ...] [flags]
 
 Flags:

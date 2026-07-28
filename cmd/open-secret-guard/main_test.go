@@ -73,6 +73,32 @@ func TestRunRulesRejectsUnsupportedFormat(t *testing.T) {
 	}
 }
 
+func TestFilterRulesBySeverityKeepsRulesAtOrAboveThreshold(t *testing.T) {
+	rules := []scanner.RuleMetadata{
+		{ID: "assigned-secret", Severity: "medium"},
+		{ID: "github-token", Severity: "high"},
+		{ID: "private-key", Severity: "critical"},
+	}
+
+	filtered, err := filterRulesBySeverity(rules, "high")
+	if err != nil {
+		t.Fatalf("filter rules: %v", err)
+	}
+
+	if len(filtered) != 2 {
+		t.Fatalf("expected 2 rules, got %d: %#v", len(filtered), filtered)
+	}
+	if filtered[0].ID != "github-token" || filtered[1].ID != "private-key" {
+		t.Fatalf("unexpected filtered rules: %#v", filtered)
+	}
+}
+
+func TestFilterRulesBySeverityRejectsUnsupportedLevel(t *testing.T) {
+	if _, err := filterRulesBySeverity(nil, "urgent"); err == nil {
+		t.Fatal("expected unsupported severity to fail")
+	}
+}
+
 func TestFilterReportBySeverityKeepsFindingsAtOrAboveThreshold(t *testing.T) {
 	report := scanner.Report{
 		Findings: []scanner.Finding{

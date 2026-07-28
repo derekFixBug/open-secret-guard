@@ -107,6 +107,12 @@ Return the rule metadata as JSON for scripts or CI configuration:
 open-secret-guard rules -format json
 ```
 
+Only list rules at or above a severity level:
+
+```sh
+open-secret-guard rules -min-severity high
+```
+
 Generate a safe `.env.example` from a local `.env` file:
 
 ```sh
