@@ -13,6 +13,7 @@ import (
 	"github.com/derekFixBug/open-secret-guard/internal/hook"
 	"github.com/derekFixBug/open-secret-guard/internal/sarif"
 	"github.com/derekFixBug/open-secret-guard/internal/scanner"
+	"github.com/derekFixBug/open-secret-guard/internal/workflow"
 )
 
 func main() {
@@ -31,6 +32,8 @@ func run(args []string) error {
 	switch args[0] {
 	case "env-example":
 		return runEnvExample(args[1:])
+	case "github-action":
+		return runGitHubAction(args[1:])
 	case "install-hook":
 		return runInstallHook(args[1:])
 	case "rules":
@@ -77,6 +80,37 @@ func runRules(args []string) error {
 		return fmt.Errorf("unsupported format %q", *format)
 	}
 	return nil
+}
+
+func runGitHubAction(args []string) error {
+	flags := flag.NewFlagSet("github-action", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+
+	outputPath := flags.String("output", "", "path to write the generated workflow")
+	allowlistPath := flags.String("allowlist", "", "allowlist path used by the scan step")
+	minSeverity := flags.String("min-severity", "", "minimum severity used by the scan step")
+	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs used by the scan step")
+	goVersion := flags.String("go-version", "1.22", "Go version used by the workflow")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+
+	if flags.NArg() != 0 {
+		return errors.New("github-action does not accept positional arguments")
+	}
+
+	content := workflow.GitHubActions(workflow.GitHubActionsOptions{
+		AllowlistPath: *allowlistPath,
+		MinSeverity:   *minSeverity,
+		OnlyRules:     *onlyRules,
+		GoVersion:     *goVersion,
+	})
+	if *outputPath == "" {
+		fmt.Print(content)
+		return nil
+	}
+
+	return os.WriteFile(*outputPath, []byte(content), 0o644)
 }
 
 func runInstallHook(args []string) error {
@@ -425,6 +459,7 @@ func printUsage() {
 
 Usage:
   open-secret-guard env-example <env-file> [-output .env.example]
+  open-secret-guard github-action [-output .github/workflows/secret-guard.yml]
   open-secret-guard install-hook [-output .git/hooks/pre-commit]
   open-secret-guard rules [-format text|json] [-min-severity low|medium|high|critical]
   open-secret-guard scan [path ...] [flags]

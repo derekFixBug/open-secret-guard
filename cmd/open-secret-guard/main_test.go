@@ -73,6 +73,12 @@ func TestRunRulesRejectsUnsupportedFormat(t *testing.T) {
 	}
 }
 
+func TestRunGitHubActionRejectsArguments(t *testing.T) {
+	if err := runGitHubAction([]string{"extra"}); err == nil {
+		t.Fatal("expected github-action command to reject arguments")
+	}
+}
+
 func TestFilterRulesBySeverityKeepsRulesAtOrAboveThreshold(t *testing.T) {
 	rules := []scanner.RuleMetadata{
 		{ID: "assigned-secret", Severity: "medium"},

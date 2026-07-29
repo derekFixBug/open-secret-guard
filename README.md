@@ -125,6 +125,12 @@ Generate a local pre-commit hook:
 open-secret-guard install-hook -allowlist .open-secret-guard.allowlist -output .git/hooks/pre-commit
 ```
 
+Generate a minimal GitHub Actions workflow:
+
+```sh
+open-secret-guard github-action -allowlist .open-secret-guard.allowlist -output .github/workflows/secret-guard.yml
+```
+
 ## Example output
 
 ```text
@@ -176,7 +182,7 @@ Planned improvements:
 
 - more provider-specific token patterns;
 - stronger negative tests for noisy patterns;
-- clearer CI and SARIF documentation;
+- clearer SARIF upload documentation;
 - tagged releases once the CLI surface stabilizes.
 
 ## License

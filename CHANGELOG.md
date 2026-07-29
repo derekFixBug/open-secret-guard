@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `github-action` to generate a minimal GitHub Actions secret scanning workflow.
 - Documented the current roadmap and contribution workflow.
 - Added issue templates for false negatives and rule requests.
 - Added `rules -min-severity` so maintainers can list built-in rules at or above a chosen severity.
