@@ -41,3 +41,22 @@ func TestGitHubActionsIncludesScanOptions(t *testing.T) {
 		}
 	}
 }
+
+func TestGitHubActionsCanUploadSARIF(t *testing.T) {
+	content := GitHubActions(GitHubActionsOptions{
+		SARIFOutput: "reports/open-secret-guard.sarif",
+	})
+
+	required := []string{
+		"permissions:\n  contents: read\n  security-events: write",
+		"scan . -fail-on-findings -format sarif > 'reports/open-secret-guard.sarif'",
+		"- uses: github/codeql-action/upload-sarif@v3",
+		"if: always()",
+		"sarif_file: 'reports/open-secret-guard.sarif'",
+	}
+	for _, item := range required {
+		if !strings.Contains(content, item) {
+			t.Fatalf("expected workflow to contain %q:\n%s", item, content)
+		}
+	}
+}

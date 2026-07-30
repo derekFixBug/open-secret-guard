@@ -131,6 +131,12 @@ Generate a minimal GitHub Actions workflow:
 open-secret-guard github-action -allowlist .open-secret-guard.allowlist -output .github/workflows/secret-guard.yml
 ```
 
+Generate a Code Scanning-ready workflow that uploads SARIF results:
+
+```sh
+open-secret-guard github-action -allowlist .open-secret-guard.allowlist -sarif-output open-secret-guard.sarif -output .github/workflows/secret-guard.yml
+```
+
 ## Example output
 
 ```text
@@ -160,12 +166,9 @@ jobs:
         with:
           go-version: "1.22"
       - run: go run ./cmd/open-secret-guard scan . -allowlist .open-secret-guard.allowlist -fail-on-findings
-
-      # Optional: write SARIF for upload with github/codeql-action/upload-sarif.
-      - run: go run ./cmd/open-secret-guard scan . -allowlist .open-secret-guard.allowlist -format sarif > open-secret-guard.sarif
-      - run: go run ./cmd/open-secret-guard env-example examples/leaky.env > /tmp/leaky.env.example
-      - run: go run ./cmd/open-secret-guard install-hook -allowlist .open-secret-guard.allowlist > /tmp/pre-commit
 ```
+
+Pass `-sarif-output open-secret-guard.sarif` to `github-action` to generate a workflow with the required `security-events: write` permission and an `upload-sarif` step. The upload step uses `if: always()` so GitHub can receive findings even when the scan fails the build.
 
 ## Project status
 
@@ -182,7 +185,7 @@ Planned improvements:
 
 - more provider-specific token patterns;
 - stronger negative tests for noisy patterns;
-- clearer SARIF upload documentation;
+- configurable workflow triggers and scan paths;
 - tagged releases once the CLI surface stabilizes.
 
 ## License

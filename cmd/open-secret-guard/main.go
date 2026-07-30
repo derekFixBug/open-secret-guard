@@ -91,6 +91,7 @@ func runGitHubAction(args []string) error {
 	minSeverity := flags.String("min-severity", "", "minimum severity used by the scan step")
 	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs used by the scan step")
 	goVersion := flags.String("go-version", "1.22", "Go version used by the workflow")
+	sarifOutput := flags.String("sarif-output", "", "path for optional SARIF output uploaded to GitHub code scanning")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -104,6 +105,7 @@ func runGitHubAction(args []string) error {
 		MinSeverity:   *minSeverity,
 		OnlyRules:     *onlyRules,
 		GoVersion:     *goVersion,
+		SARIFOutput:   *sarifOutput,
 	})
 	if *outputPath == "" {
 		fmt.Print(content)
@@ -459,7 +461,7 @@ func printUsage() {
 
 Usage:
   open-secret-guard env-example <env-file> [-output .env.example]
-  open-secret-guard github-action [-output .github/workflows/secret-guard.yml]
+  open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-sarif-output open-secret-guard.sarif]
   open-secret-guard install-hook [-output .git/hooks/pre-commit]
   open-secret-guard rules [-format text|json] [-min-severity low|medium|high|critical]
   open-secret-guard scan [path ...] [flags]
