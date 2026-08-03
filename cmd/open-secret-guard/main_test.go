@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/derekFixBug/open-secret-guard/internal/scanner"
@@ -76,6 +77,43 @@ func TestRunRulesRejectsUnsupportedFormat(t *testing.T) {
 func TestRunGitHubActionRejectsArguments(t *testing.T) {
 	if err := runGitHubAction([]string{"extra"}); err == nil {
 		t.Fatal("expected github-action command to reject arguments")
+	}
+}
+
+func TestMarkdownCellEscapesTableContent(t *testing.T) {
+	got := markdownCell("first|second\nthird")
+	if got != "first\\|second third" {
+		t.Fatalf("unexpected markdown cell %q", got)
+	}
+}
+
+func TestSummaryReportIncludesCountsWithoutMatches(t *testing.T) {
+	report := scanner.Report{
+		ScannedFiles: 4,
+		SkippedFiles: 1,
+		Findings: []scanner.Finding{
+			{RuleID: "private-key", Severity: "critical", RedactedMatch: "never-print-this"},
+			{RuleID: "github-token", Severity: "high", RedactedMatch: "never-print-this"},
+			{RuleID: "github-token", Severity: "high", RedactedMatch: "never-print-this"},
+		},
+	}
+
+	summary := summaryText(report)
+	for _, item := range []string{
+		"Scanned files: 4",
+		"Skipped files: 1",
+		"Findings: 3",
+		"critical: 1",
+		"high: 2",
+		"github-token: 2",
+		"private-key: 1",
+	} {
+		if !strings.Contains(summary, item) {
+			t.Fatalf("expected summary to contain %q:\n%s", item, summary)
+		}
+	}
+	if strings.Contains(summary, "never-print-this") {
+		t.Fatalf("summary should not contain redacted matches:\n%s", summary)
 	}
 }
 

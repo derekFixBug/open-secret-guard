@@ -113,6 +113,18 @@ Only list rules at or above a severity level:
 open-secret-guard rules -min-severity high
 ```
 
+Print the rules as a Markdown table for project documentation:
+
+```sh
+open-secret-guard rules -format markdown
+```
+
+Print a CI-friendly scan summary without paths or matched values:
+
+```sh
+open-secret-guard scan . -format summary
+```
+
 Generate a safe `.env.example` from a local `.env` file:
 
 ```sh
@@ -186,6 +198,7 @@ Planned improvements:
 - more provider-specific token patterns;
 - stronger negative tests for noisy patterns;
 - configurable workflow triggers and scan paths;
+- provider grouping in generated rule documentation;
 - tagged releases once the CLI surface stabilizes.
 
 ## License

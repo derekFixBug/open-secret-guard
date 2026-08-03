@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/derekFixBug/open-secret-guard/internal/allowlist"
@@ -52,7 +53,7 @@ func runRules(args []string) error {
 	flags := flag.NewFlagSet("rules", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 
-	format := flags.String("format", "text", "output format: text or json")
+	format := flags.String("format", "text", "output format: text, json, or markdown")
 	minSeverity := flags.String("min-severity", "", "minimum severity to list: low, medium, high, or critical")
 	if err := flags.Parse(args); err != nil {
 		return err
@@ -76,6 +77,8 @@ func runRules(args []string) error {
 		encoder := json.NewEncoder(os.Stdout)
 		encoder.SetIndent("", "  ")
 		return encoder.Encode(rules)
+	case "markdown":
+		printMarkdownRules(rules)
 	default:
 		return fmt.Errorf("unsupported format %q", *format)
 	}
@@ -182,7 +185,7 @@ func runScan(args []string) error {
 	flags := flag.NewFlagSet("scan", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 
-	format := flags.String("format", "text", "output format: text, json, or sarif")
+	format := flags.String("format", "text", "output format: text, json, sarif, or summary")
 	failOnFindings := flags.Bool("fail-on-findings", false, "exit with a non-zero status when findings are detected")
 	includeHidden := flags.Bool("include-hidden", false, "scan hidden files and directories")
 	exclude := flags.String("exclude", "", "comma-separated file or directory patterns to skip")
@@ -238,6 +241,8 @@ func runScan(args []string) error {
 		if err := encoder.Encode(sarif.FromReport(report)); err != nil {
 			return err
 		}
+	case "summary":
+		printSummaryReport(report)
 	default:
 		return fmt.Errorf("unsupported format %q", *format)
 	}
@@ -456,6 +461,62 @@ func printTextReport(report scanner.Report) {
 	}
 }
 
+func printMarkdownRules(rules []scanner.RuleMetadata) {
+	fmt.Println("| Rule ID | Severity | Description |")
+	fmt.Println("| --- | --- | --- |")
+	for _, rule := range rules {
+		fmt.Printf("| `%s` | %s | %s |\n", markdownCell(rule.ID), markdownCell(rule.Severity), markdownCell(rule.Message))
+	}
+}
+
+func printSummaryReport(report scanner.Report) {
+	fmt.Print(summaryText(report))
+}
+
+func summaryText(report scanner.Report) string {
+	severityCounts := make(map[string]int)
+	ruleCounts := make(map[string]int)
+	for _, finding := range report.Findings {
+		severityCounts[finding.Severity]++
+		ruleCounts[finding.RuleID]++
+	}
+
+	lines := []string{
+		fmt.Sprintf("Scanned files: %d", report.ScannedFiles),
+		fmt.Sprintf("Skipped files: %d", report.SkippedFiles),
+		fmt.Sprintf("Findings: %d", len(report.Findings)),
+	}
+
+	if len(report.Findings) == 0 {
+		return strings.Join(lines, "\n") + "\n"
+	}
+
+	lines = append(lines, "", "By severity:")
+	for _, severity := range []string{"critical", "high", "medium", "low"} {
+		if count := severityCounts[severity]; count > 0 {
+			lines = append(lines, fmt.Sprintf("%s: %d", severity, count))
+		}
+	}
+
+	ruleIDs := make([]string, 0, len(ruleCounts))
+	for ruleID := range ruleCounts {
+		ruleIDs = append(ruleIDs, ruleID)
+	}
+	sort.Strings(ruleIDs)
+
+	lines = append(lines, "", "By rule:")
+	for _, ruleID := range ruleIDs {
+		lines = append(lines, fmt.Sprintf("%s: %d", ruleID, ruleCounts[ruleID]))
+	}
+
+	return strings.Join(lines, "\n") + "\n"
+}
+
+func markdownCell(value string) string {
+	value = strings.ReplaceAll(value, "|", "\\|")
+	return strings.ReplaceAll(value, "\n", " ")
+}
+
 func printUsage() {
 	fmt.Println(`open-secret-guard
 
@@ -463,11 +524,11 @@ Usage:
   open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-sarif-output open-secret-guard.sarif]
   open-secret-guard install-hook [-output .git/hooks/pre-commit]
-  open-secret-guard rules [-format text|json] [-min-severity low|medium|high|critical]
+  open-secret-guard rules [-format text|json|markdown] [-min-severity low|medium|high|critical]
   open-secret-guard scan [path ...] [flags]
 
 Flags:
-  -format text|json|sarif Output format
+  -format text|json|sarif|summary Output format
   -fail-on-findings       Exit non-zero when findings are detected
   -min-severity level     Only report findings at or above low|medium|high|critical
   -only-rules ids         Only report findings for the given comma-separated rule IDs

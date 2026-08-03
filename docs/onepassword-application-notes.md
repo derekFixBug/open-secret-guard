@@ -34,3 +34,4 @@ The project can use 1Password to store release credentials, test tokens, package
 - 2026-07-28: Added `CHANGELOG.md`, `CONTRIBUTING.md`, `ROADMAP.md`, and GitHub issue templates for project maintenance.
 - 2026-07-29: Added `github-action` workflow generation for maintainers who want a quick CI setup.
 - 2026-07-30: Added optional SARIF upload workflow generation for GitHub Code Scanning integration.
+- 2026-08-03: Added count-only scan summaries and Markdown rule-table output for safer CI reporting and project documentation.
