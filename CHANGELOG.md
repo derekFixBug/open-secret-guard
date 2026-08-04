@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `allowlist-check` and automatic allowlist validation to catch unknown rule IDs and duplicate entries before scans run.
 - Added `scan -format summary` for count-only CI output that does not print matched values.
 - Added `rules -format markdown` for documentation-ready rule tables.
 - Added `github-action -sarif-output` to generate a Code Scanning upload step with the required GitHub Actions permissions.

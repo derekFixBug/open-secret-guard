@@ -62,6 +62,29 @@ func IsAllowed(finding scanner.Finding, entries []Entry) bool {
 	return false
 }
 
+func Validate(entries []Entry, rules []scanner.RuleMetadata) error {
+	knownRules := make(map[string]bool, len(rules))
+	for _, rule := range rules {
+		knownRules[rule.ID] = true
+	}
+
+	seen := make(map[string]int, len(entries))
+	for index, entry := range entries {
+		entryNumber := index + 1
+		if !knownRules[entry.RuleID] {
+			return fmt.Errorf("entry %d uses unknown rule ID %q", entryNumber, entry.RuleID)
+		}
+
+		key := fmt.Sprintf("%s\x00%s\x00%d", entry.RuleID, entry.PathPattern, entry.Line)
+		if previous, exists := seen[key]; exists {
+			return fmt.Errorf("entry %d duplicates entry %d", entryNumber, previous)
+		}
+		seen[key] = entryNumber
+	}
+
+	return nil
+}
+
 func parseLine(line string) (Entry, error) {
 	fields := strings.Fields(line)
 	if len(fields) < 2 || len(fields) > 3 {

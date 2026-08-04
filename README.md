@@ -95,6 +95,12 @@ For example:
 database-url examples/leaky.env 4
 ```
 
+Validate an allowlist before using it in CI. The scanner also performs this validation automatically when `-allowlist` is supplied, so misspelled rule IDs and duplicate entries do not silently weaken a scan:
+
+```sh
+open-secret-guard allowlist-check .open-secret-guard.allowlist
+```
+
 List the built-in rule IDs, severity levels, and descriptions:
 
 ```sh

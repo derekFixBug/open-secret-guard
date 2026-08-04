@@ -80,10 +80,25 @@ func TestRunGitHubActionRejectsArguments(t *testing.T) {
 	}
 }
 
+func TestRunAllowlistCheckRequiresOnePath(t *testing.T) {
+	if err := runAllowlistCheck(nil); err == nil {
+		t.Fatal("expected allowlist-check to require a path")
+	}
+}
+
 func TestMarkdownCellEscapesTableContent(t *testing.T) {
 	got := markdownCell("first|second\nthird")
 	if got != "first\\|second third" {
 		t.Fatalf("unexpected markdown cell %q", got)
+	}
+}
+
+func TestPluralSuffix(t *testing.T) {
+	if got := pluralSuffix(1); got != "y" {
+		t.Fatalf("expected singular suffix, got %q", got)
+	}
+	if got := pluralSuffix(2); got != "ies" {
+		t.Fatalf("expected plural suffix, got %q", got)
 	}
 }
 

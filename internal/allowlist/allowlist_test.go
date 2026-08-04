@@ -64,3 +64,34 @@ func TestIsAllowedRejectsWrongLine(t *testing.T) {
 		t.Fatal("expected finding not to be allowlisted")
 	}
 }
+
+func TestValidateRejectsUnknownRuleID(t *testing.T) {
+	err := Validate([]Entry{{RuleID: "not-a-rule", PathPattern: "examples/*.env"}}, []scanner.RuleMetadata{{ID: "github-token"}})
+	if err == nil {
+		t.Fatal("expected unknown rule ID to fail")
+	}
+}
+
+func TestValidateRejectsDuplicateEntry(t *testing.T) {
+	entries := []Entry{
+		{RuleID: "github-token", PathPattern: "examples/*.env", Line: 4},
+		{RuleID: "github-token", PathPattern: "examples/*.env", Line: 4},
+	}
+
+	err := Validate(entries, []scanner.RuleMetadata{{ID: "github-token"}})
+	if err == nil {
+		t.Fatal("expected duplicate entry to fail")
+	}
+}
+
+func TestValidateAcceptsDistinctKnownEntries(t *testing.T) {
+	entries := []Entry{
+		{RuleID: "github-token", PathPattern: "examples/*.env", Line: 4},
+		{RuleID: "private-key", PathPattern: "fixtures/key.pem"},
+	}
+
+	err := Validate(entries, []scanner.RuleMetadata{{ID: "github-token"}, {ID: "private-key"}})
+	if err != nil {
+		t.Fatalf("validate entries: %v", err)
+	}
+}

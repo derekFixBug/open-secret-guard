@@ -31,6 +31,8 @@ func run(args []string) error {
 	}
 
 	switch args[0] {
+	case "allowlist-check":
+		return runAllowlistCheck(args[1:])
 	case "env-example":
 		return runEnvExample(args[1:])
 	case "github-action":
@@ -47,6 +49,23 @@ func run(args []string) error {
 	default:
 		return fmt.Errorf("unknown command %q", args[0])
 	}
+}
+
+func runAllowlistCheck(args []string) error {
+	if len(args) != 1 {
+		return errors.New("allowlist-check requires exactly one allowlist file")
+	}
+
+	entries, err := allowlist.Load(args[0])
+	if err != nil {
+		return err
+	}
+	if err := allowlist.Validate(entries, scanner.Rules()); err != nil {
+		return err
+	}
+
+	fmt.Printf("Allowlist is valid: %d entr%s.\n", len(entries), pluralSuffix(len(entries)))
+	return nil
 }
 
 func runRules(args []string) error {
@@ -344,6 +363,9 @@ func loadAllowlist(path string) (scanner.Allowlist, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := allowlist.Validate(entries, scanner.Rules()); err != nil {
+		return nil, err
+	}
 	return &allowlistMatcher{entries: entries}, nil
 }
 
@@ -517,10 +539,18 @@ func markdownCell(value string) string {
 	return strings.ReplaceAll(value, "\n", " ")
 }
 
+func pluralSuffix(count int) string {
+	if count == 1 {
+		return "y"
+	}
+	return "ies"
+}
+
 func printUsage() {
 	fmt.Println(`open-secret-guard
 
 Usage:
+  open-secret-guard allowlist-check <allowlist-file>
   open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-sarif-output open-secret-guard.sarif]
   open-secret-guard install-hook [-output .git/hooks/pre-commit]
