@@ -36,3 +36,4 @@ The project can use 1Password to store release credentials, test tokens, package
 - 2026-07-30: Added optional SARIF upload workflow generation for GitHub Code Scanning integration.
 - 2026-08-03: Added count-only scan summaries and Markdown rule-table output for safer CI reporting and project documentation.
 - 2026-08-04: Added allowlist validation to prevent misspelled rule IDs and duplicate review exceptions from weakening scans.
+- 2026-08-06: Added monorepo workflow generation controls for trigger paths and scan paths.

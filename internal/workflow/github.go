@@ -10,6 +10,8 @@ type GitHubActionsOptions struct {
 	OnlyRules     string
 	GoVersion     string
 	SARIFOutput   string
+	ScanPaths     string
+	TriggerPaths  string
 }
 
 func GitHubActions(options GitHubActionsOptions) string {
@@ -18,7 +20,13 @@ func GitHubActions(options GitHubActionsOptions) string {
 		goVersion = "1.22"
 	}
 
-	scanArgs := []string{"go", "run", "./cmd/open-secret-guard", "scan", "."}
+	scanArgs := []string{"go", "run", "./cmd/open-secret-guard", "scan"}
+	for _, path := range splitCSV(options.ScanPaths) {
+		scanArgs = append(scanArgs, shellQuote(path))
+	}
+	if len(scanArgs) == 4 {
+		scanArgs = append(scanArgs, ".")
+	}
 	if strings.TrimSpace(options.AllowlistPath) != "" {
 		scanArgs = append(scanArgs, "-allowlist", shellQuote(options.AllowlistPath))
 	}
@@ -30,11 +38,7 @@ func GitHubActions(options GitHubActionsOptions) string {
 	}
 	scanArgs = append(scanArgs, "-fail-on-findings")
 
-	workflow := "name: Secret guard\n\n" +
-		"on:\n" +
-		"  pull_request:\n" +
-		"  push:\n" +
-		"    branches: [main]\n\n"
+	workflow := "name: Secret guard\n\n" + workflowTriggers(splitCSV(options.TriggerPaths))
 
 	if strings.TrimSpace(options.SARIFOutput) != "" {
 		workflow += "permissions:\n" +
@@ -73,4 +77,35 @@ func shellQuote(value string) string {
 
 func yamlSingleQuote(value string) string {
 	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
+}
+
+func splitCSV(value string) []string {
+	var values []string
+	for _, item := range strings.Split(value, ",") {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			values = append(values, item)
+		}
+	}
+	return values
+}
+
+func workflowTriggers(paths []string) string {
+	workflow := "on:\n  pull_request:\n"
+	if len(paths) > 0 {
+		workflow += "    paths:\n"
+		for _, path := range paths {
+			workflow += "      - " + yamlSingleQuote(path) + "\n"
+		}
+	}
+
+	workflow += "  push:\n    branches: [main]\n"
+	if len(paths) > 0 {
+		workflow += "    paths:\n"
+		for _, path := range paths {
+			workflow += "      - " + yamlSingleQuote(path) + "\n"
+		}
+	}
+
+	return workflow + "\n"
 }

@@ -155,6 +155,12 @@ Generate a Code Scanning-ready workflow that uploads SARIF results:
 open-secret-guard github-action -allowlist .open-secret-guard.allowlist -sarif-output open-secret-guard.sarif -output .github/workflows/secret-guard.yml
 ```
 
+For a monorepo, generate a workflow that runs only when selected directories change and scans only those directories:
+
+```sh
+open-secret-guard github-action -trigger-paths 'services/api/**,packages/shared/**' -scan-paths 'services/api,packages/shared' -output .github/workflows/secret-guard.yml
+```
+
 ## Example output
 
 ```text
@@ -203,7 +209,7 @@ Planned improvements:
 
 - more provider-specific token patterns;
 - stronger negative tests for noisy patterns;
-- configurable workflow triggers and scan paths;
+- configurable workflow branch filters;
 - provider grouping in generated rule documentation;
 - tagged releases once the CLI surface stabilizes.
 

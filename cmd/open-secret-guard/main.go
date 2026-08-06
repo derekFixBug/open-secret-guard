@@ -114,6 +114,8 @@ func runGitHubAction(args []string) error {
 	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs used by the scan step")
 	goVersion := flags.String("go-version", "1.22", "Go version used by the workflow")
 	sarifOutput := flags.String("sarif-output", "", "path for optional SARIF output uploaded to GitHub code scanning")
+	scanPaths := flags.String("scan-paths", "", "comma-separated paths scanned by the generated workflow")
+	triggerPaths := flags.String("trigger-paths", "", "comma-separated paths that trigger the generated workflow")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -128,6 +130,8 @@ func runGitHubAction(args []string) error {
 		OnlyRules:     *onlyRules,
 		GoVersion:     *goVersion,
 		SARIFOutput:   *sarifOutput,
+		ScanPaths:     *scanPaths,
+		TriggerPaths:  *triggerPaths,
 	})
 	if *outputPath == "" {
 		fmt.Print(content)
@@ -552,7 +556,7 @@ func printUsage() {
 Usage:
   open-secret-guard allowlist-check <allowlist-file>
   open-secret-guard env-example <env-file> [-output .env.example]
-  open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-sarif-output open-secret-guard.sarif]
+  open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-trigger-paths cmd/**,internal/**]
   open-secret-guard install-hook [-output .git/hooks/pre-commit]
   open-secret-guard rules [-format text|json|markdown] [-min-severity low|medium|high|critical]
   open-secret-guard scan [path ...] [flags]
