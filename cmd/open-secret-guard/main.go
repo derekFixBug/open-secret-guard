@@ -33,6 +33,8 @@ func run(args []string) error {
 	switch args[0] {
 	case "allowlist-check":
 		return runAllowlistCheck(args[1:])
+	case "allowlist-suggest":
+		return runAllowlistSuggest(args[1:])
 	case "env-example":
 		return runEnvExample(args[1:])
 	case "github-action":
@@ -65,6 +67,46 @@ func runAllowlistCheck(args []string) error {
 	}
 
 	fmt.Printf("Allowlist is valid: %d entr%s.\n", len(entries), pluralSuffix(len(entries)))
+	return nil
+}
+
+func runAllowlistSuggest(args []string) error {
+	flags := flag.NewFlagSet("allowlist-suggest", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+
+	includeHidden := flags.Bool("include-hidden", false, "scan hidden files and directories")
+	exclude := flags.String("exclude", "", "comma-separated file or directory patterns to skip")
+	minSeverity := flags.String("min-severity", "", "minimum severity to include: low, medium, high, or critical")
+	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs to include")
+
+	normalizedArgs := normalizeScanArgs(args)
+	if err := flags.Parse(normalizedArgs); err != nil {
+		return err
+	}
+
+	paths := flags.Args()
+	if len(paths) == 0 {
+		paths = []string{"."}
+	}
+
+	report, err := scanner.Scan(scanner.Options{
+		Paths:         paths,
+		IncludeHidden: *includeHidden,
+		Exclude:       splitCSV(*exclude),
+	})
+	if err != nil {
+		return err
+	}
+	report, err = filterReportByRules(report, *onlyRules)
+	if err != nil {
+		return err
+	}
+	report, err = filterReportBySeverity(report, *minSeverity)
+	if err != nil {
+		return err
+	}
+
+	fmt.Print(allowlistSuggestionText(report))
 	return nil
 }
 
@@ -499,6 +541,20 @@ func printSummaryReport(report scanner.Report) {
 	fmt.Print(summaryText(report))
 }
 
+func allowlistSuggestionText(report scanner.Report) string {
+	lines := []string{
+		"# Review every entry before adding it to an allowlist.",
+		"# Format: rule-id path-glob [line]",
+	}
+	for _, finding := range report.Findings {
+		lines = append(lines, fmt.Sprintf("%s %s %d", finding.RuleID, finding.Path, finding.Line))
+	}
+	if len(report.Findings) == 0 {
+		lines = append(lines, "# No findings to suggest.")
+	}
+	return strings.Join(lines, "\n") + "\n"
+}
+
 func summaryText(report scanner.Report) string {
 	severityCounts := make(map[string]int)
 	ruleCounts := make(map[string]int)
@@ -555,6 +611,7 @@ func printUsage() {
 
 Usage:
   open-secret-guard allowlist-check <allowlist-file>
+  open-secret-guard allowlist-suggest [path ...] [flags]
   open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-trigger-paths cmd/**,internal/**]
   open-secret-guard install-hook [-output .git/hooks/pre-commit]

@@ -101,6 +101,12 @@ Validate an allowlist before using it in CI. The scanner also performs this vali
 open-secret-guard allowlist-check .open-secret-guard.allowlist
 ```
 
+Generate reviewed allowlist candidates from current findings. This command never changes a file and never prints matched values:
+
+```sh
+open-secret-guard allowlist-suggest . -min-severity high > .open-secret-guard.allowlist.candidates
+```
+
 List the built-in rule IDs, severity levels, and descriptions:
 
 ```sh
@@ -211,6 +217,7 @@ Planned improvements:
 - stronger negative tests for noisy patterns;
 - configurable workflow branch filters;
 - provider grouping in generated rule documentation;
+- optional expiration dates for reviewed allowlist entries;
 - tagged releases once the CLI surface stabilizes.
 
 ## License

@@ -86,6 +86,34 @@ func TestRunAllowlistCheckRequiresOnePath(t *testing.T) {
 	}
 }
 
+func TestAllowlistSuggestionTextIncludesOnlyReviewableFields(t *testing.T) {
+	report := scanner.Report{Findings: []scanner.Finding{
+		{RuleID: "github-token", Path: "config/.env", Line: 4, RedactedMatch: "should-not-appear"},
+		{RuleID: "private-key", Path: "secrets/key.pem", Line: 1, RedactedMatch: "should-not-appear"},
+	}}
+
+	suggestions := allowlistSuggestionText(report)
+	for _, item := range []string{
+		"# Review every entry before adding it to an allowlist.",
+		"github-token config/.env 4",
+		"private-key secrets/key.pem 1",
+	} {
+		if !strings.Contains(suggestions, item) {
+			t.Fatalf("expected suggestions to contain %q:\n%s", item, suggestions)
+		}
+	}
+	if strings.Contains(suggestions, "should-not-appear") {
+		t.Fatalf("suggestions should not contain matches:\n%s", suggestions)
+	}
+}
+
+func TestAllowlistSuggestionTextExplainsNoFindings(t *testing.T) {
+	suggestions := allowlistSuggestionText(scanner.Report{})
+	if !strings.Contains(suggestions, "# No findings to suggest.") {
+		t.Fatalf("expected no-findings message:\n%s", suggestions)
+	}
+}
+
 func TestMarkdownCellEscapesTableContent(t *testing.T) {
 	got := markdownCell("first|second\nthird")
 	if got != "first\\|second third" {
