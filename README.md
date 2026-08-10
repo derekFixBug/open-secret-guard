@@ -77,6 +77,12 @@ Exclude demo or fixture paths:
 open-secret-guard scan . -exclude examples,testdata
 ```
 
+Increase the maximum file size for generated or minified configuration files. The default is 2 MiB:
+
+```sh
+open-secret-guard scan . -max-file-bytes 8388608
+```
+
 Allow a reviewed finding without skipping the whole file:
 
 ```sh
@@ -218,6 +224,7 @@ Planned improvements:
 - configurable workflow branch filters;
 - provider grouping in generated rule documentation;
 - optional expiration dates for reviewed allowlist entries;
+- configurable limits for the number of reported findings;
 - tagged releases once the CLI surface stabilizes.
 
 ## License

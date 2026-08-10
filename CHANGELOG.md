@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `-max-file-bytes` to scan larger generated or minified configuration files, and support for long lines within the selected limit.
 - Added `allowlist-suggest` to generate reviewable allowlist candidates without exposing matched values.
 - Added `github-action -trigger-paths` and `-scan-paths` for focused monorepo workflows.
 - Added `allowlist-check` and automatic allowlist validation to catch unknown rule IDs and duplicate entries before scans run.

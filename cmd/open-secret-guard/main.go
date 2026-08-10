@@ -78,6 +78,7 @@ func runAllowlistSuggest(args []string) error {
 	exclude := flags.String("exclude", "", "comma-separated file or directory patterns to skip")
 	minSeverity := flags.String("min-severity", "", "minimum severity to include: low, medium, high, or critical")
 	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs to include")
+	maxFileBytes := flags.Int("max-file-bytes", 0, "maximum scanned file size in bytes; 0 uses the default")
 
 	normalizedArgs := normalizeScanArgs(args)
 	if err := flags.Parse(normalizedArgs); err != nil {
@@ -93,6 +94,7 @@ func runAllowlistSuggest(args []string) error {
 		Paths:         paths,
 		IncludeHidden: *includeHidden,
 		Exclude:       splitCSV(*exclude),
+		MaxFileBytes:  *maxFileBytes,
 	})
 	if err != nil {
 		return err
@@ -257,6 +259,7 @@ func runScan(args []string) error {
 	allowlistPath := flags.String("allowlist", "", "path to an allowlist file")
 	minSeverity := flags.String("min-severity", "", "minimum severity to report: low, medium, high, or critical")
 	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs to include in the report")
+	maxFileBytes := flags.Int("max-file-bytes", 0, "maximum scanned file size in bytes; 0 uses the default")
 
 	normalizedArgs := normalizeScanArgs(args)
 	if err := flags.Parse(normalizedArgs); err != nil {
@@ -278,6 +281,7 @@ func runScan(args []string) error {
 		IncludeHidden: *includeHidden,
 		Exclude:       splitCSV(*exclude),
 		Allowlist:     allowlistMatcher,
+		MaxFileBytes:  *maxFileBytes,
 	})
 	if err != nil {
 		return err
@@ -340,7 +344,7 @@ func normalizeScanArgs(args []string) []string {
 				index++
 				flagArgs = append(flagArgs, args[index])
 			}
-		case "-allowlist", "-min-severity", "-only-rules":
+		case "-allowlist", "-min-severity", "-only-rules", "-max-file-bytes":
 			flagArgs = append(flagArgs, arg)
 			if index+1 < len(args) {
 				index++
@@ -625,5 +629,6 @@ Flags:
   -only-rules ids         Only report findings for the given comma-separated rule IDs
   -include-hidden         Scan hidden files and directories
   -exclude pattern        Comma-separated file or directory patterns to skip
-  -allowlist path         Path to an allowlist file`)
+  -allowlist path         Path to an allowlist file
+  -max-file-bytes count   Maximum scanned file size; 0 uses the default`)
 }

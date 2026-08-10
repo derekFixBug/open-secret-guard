@@ -19,6 +19,7 @@ type Options struct {
 	IncludeHidden bool      `json:"includeHidden"`
 	Exclude       []string  `json:"exclude"`
 	Allowlist     Allowlist `json:"allowlist"`
+	MaxFileBytes  int       `json:"maxFileBytes"`
 }
 
 type Report struct {
@@ -206,6 +207,9 @@ var skippedDirs = map[string]bool{
 }
 
 func Scan(options Options) (Report, error) {
+	if options.MaxFileBytes < 0 {
+		return Report{}, errors.New("maximum file size cannot be negative")
+	}
 	if len(options.Paths) == 0 {
 		options.Paths = []string{"."}
 	}
@@ -253,7 +257,7 @@ func scanPath(path string, options Options, report *Report) error {
 	}
 
 	if !info.IsDir() {
-		return scanFile(path, report)
+		return scanFile(path, report, options.MaxFileBytes)
 	}
 
 	return filepath.WalkDir(path, func(current string, entry os.DirEntry, err error) error {
@@ -282,7 +286,7 @@ func scanPath(path string, options Options, report *Report) error {
 			return nil
 		}
 
-		return scanFile(current, report)
+		return scanFile(current, report, options.MaxFileBytes)
 	})
 }
 
@@ -311,7 +315,7 @@ func isExcluded(path string, patterns []string) bool {
 	return false
 }
 
-func scanFile(path string, report *Report) error {
+func scanFile(path string, report *Report, configuredMaxBytes int) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return err
@@ -322,7 +326,8 @@ func scanFile(path string, report *Report) error {
 	if err != nil {
 		return err
 	}
-	if stat.Size() > maxFileBytes {
+	maxBytes := configuredMaxFileBytes(configuredMaxBytes)
+	if stat.Size() > int64(maxBytes) {
 		report.SkippedFiles++
 		return nil
 	}
@@ -337,15 +342,19 @@ func scanFile(path string, report *Report) error {
 	}
 
 	report.ScannedFiles++
-	report.Findings = append(report.Findings, scanContent(path, string(content))...)
+	report.Findings = append(report.Findings, scanContentWithMaxBytes(path, string(content), maxBytes)...)
 	return nil
 }
 
 func scanContent(path string, content string) []Finding {
+	return scanContentWithMaxBytes(path, content, maxFileBytes)
+}
+
+func scanContentWithMaxBytes(path string, content string, maxBytes int) []Finding {
 	var findings []Finding
 	reader := strings.NewReader(content)
 	scanner := bufio.NewScanner(reader)
-	scanner.Buffer(make([]byte, 1024), 1024*1024)
+	scanner.Buffer(make([]byte, 64*1024), maxBytes+1)
 
 	lineNumber := 0
 	for scanner.Scan() {
@@ -369,6 +378,13 @@ func scanContent(path string, content string) []Finding {
 	}
 
 	return findings
+}
+
+func configuredMaxFileBytes(configuredMaxBytes int) int {
+	if configuredMaxBytes > 0 {
+		return configuredMaxBytes
+	}
+	return maxFileBytes
 }
 
 func isBinary(content []byte) bool {

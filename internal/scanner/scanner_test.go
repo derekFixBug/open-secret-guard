@@ -94,6 +94,46 @@ func TestScanFindsProviderSpecificTokens(t *testing.T) {
 	}
 }
 
+func TestScanFindsSecretOnLongLine(t *testing.T) {
+	content := strings.Repeat("x", 1024*1024+128) + " GITHUB_TOKEN=" + githubTokenFixture()
+
+	findings := scanContent("minified-config.json", content)
+	if !findingRuleIDs(findings)["github-token"] {
+		t.Fatalf("expected github-token in long line, got %#v", findings)
+	}
+}
+
+func TestScanRespectsConfiguredMaximumFileSize(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "config.env")
+	content := "GITHUB_TOKEN=" + githubTokenFixture() + "\n"
+	if err := os.WriteFile(target, []byte(content), 0o600); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	skipped, err := Scan(Options{Paths: []string{target}, MaxFileBytes: 20})
+	if err != nil {
+		t.Fatalf("scan with small limit: %v", err)
+	}
+	if skipped.ScannedFiles != 0 || skipped.SkippedFiles != 1 {
+		t.Fatalf("expected oversized file to be skipped, got %#v", skipped)
+	}
+
+	report, err := Scan(Options{Paths: []string{target}, MaxFileBytes: len(content) + 1})
+	if err != nil {
+		t.Fatalf("scan with increased limit: %v", err)
+	}
+	if !findingRuleIDs(report.Findings)["github-token"] {
+		t.Fatalf("expected github-token with increased limit, got %#v", report.Findings)
+	}
+}
+
+func TestScanRejectsNegativeMaximumFileSize(t *testing.T) {
+	if _, err := Scan(Options{MaxFileBytes: -1}); err == nil {
+		t.Fatal("expected negative maximum file size to fail")
+	}
+}
+
 func TestScanExcludesPaths(t *testing.T) {
 	dir := t.TempDir()
 	fixtureDir := filepath.Join(dir, "fixtures")
@@ -168,6 +208,10 @@ func slackWebhookFixture() string {
 
 func githubFineGrainedTokenFixture() string {
 	return "github" + "_pat_" + "11AAAAAAA0abcdefghijklmnopqrstuvwxyzABCDEF"
+}
+
+func githubTokenFixture() string {
+	return "ghp_" + "1234567890abcdefghijklmnopqrstuvwxyz"
 }
 
 func gitlabTokenFixture() string {

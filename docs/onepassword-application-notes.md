@@ -38,3 +38,4 @@ The project can use 1Password to store release credentials, test tokens, package
 - 2026-08-04: Added allowlist validation to prevent misspelled rule IDs and duplicate review exceptions from weakening scans.
 - 2026-08-06: Added monorepo workflow generation controls for trigger paths and scan paths.
 - 2026-08-07: Added reviewed allowlist candidate generation without exposing matched values.
+- 2026-08-10: Added configurable scan file-size limits and long-line support for generated configuration files.
