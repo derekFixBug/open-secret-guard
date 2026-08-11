@@ -186,6 +186,28 @@ func TestFilterRulesBySeverityRejectsUnsupportedLevel(t *testing.T) {
 	}
 }
 
+func TestFilterRulesByProviderKeepsSelectedProviders(t *testing.T) {
+	rules := []scanner.RuleMetadata{
+		{ID: "github-token", Provider: "github", Severity: "high"},
+		{ID: "gitlab-token", Provider: "gitlab", Severity: "high"},
+		{ID: "private-key", Provider: "generic", Severity: "critical"},
+	}
+
+	filtered, err := filterRulesByProvider(rules, "GitHub, generic")
+	if err != nil {
+		t.Fatalf("filter rules: %v", err)
+	}
+	if len(filtered) != 2 || filtered[0].ID != "github-token" || filtered[1].ID != "private-key" {
+		t.Fatalf("unexpected filtered rules: %#v", filtered)
+	}
+}
+
+func TestFilterRulesByProviderRejectsUnknownProvider(t *testing.T) {
+	if _, err := filterRulesByProvider(scanner.Rules(), "not-a-provider"); err == nil {
+		t.Fatal("expected unknown provider to fail")
+	}
+}
+
 func TestFilterReportBySeverityKeepsFindingsAtOrAboveThreshold(t *testing.T) {
 	report := scanner.Report{
 		Findings: []scanner.Finding{

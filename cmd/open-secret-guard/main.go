@@ -118,6 +118,7 @@ func runRules(args []string) error {
 
 	format := flags.String("format", "text", "output format: text, json, or markdown")
 	minSeverity := flags.String("min-severity", "", "minimum severity to list: low, medium, high, or critical")
+	provider := flags.String("provider", "", "comma-separated providers to list")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -131,10 +132,14 @@ func runRules(args []string) error {
 	if err != nil {
 		return err
 	}
+	rules, err = filterRulesByProvider(rules, *provider)
+	if err != nil {
+		return err
+	}
 	switch *format {
 	case "text":
 		for _, rule := range rules {
-			fmt.Printf("%s\t%s\t%s\n", rule.ID, rule.Severity, rule.Message)
+			fmt.Printf("%s\t%s\t%s\t%s\n", rule.ID, rule.Provider, rule.Severity, rule.Message)
 		}
 	case "json":
 		encoder := json.NewEncoder(os.Stdout)
@@ -504,6 +509,35 @@ func filterRulesBySeverity(rules []scanner.RuleMetadata, minSeverity string) ([]
 	return filtered, nil
 }
 
+func filterRulesByProvider(rules []scanner.RuleMetadata, providerFilter string) ([]scanner.RuleMetadata, error) {
+	providers := splitCSV(providerFilter)
+	if len(providers) == 0 {
+		return rules, nil
+	}
+
+	knownProviders := make(map[string]bool, len(scanner.Rules()))
+	for _, rule := range scanner.Rules() {
+		knownProviders[strings.ToLower(rule.Provider)] = true
+	}
+
+	selectedProviders := make(map[string]bool, len(providers))
+	for _, provider := range providers {
+		provider = strings.ToLower(provider)
+		if !knownProviders[provider] {
+			return rules, fmt.Errorf("unknown provider %q", provider)
+		}
+		selectedProviders[provider] = true
+	}
+
+	filtered := rules[:0]
+	for _, rule := range rules {
+		if selectedProviders[strings.ToLower(rule.Provider)] {
+			filtered = append(filtered, rule)
+		}
+	}
+	return filtered, nil
+}
+
 func severityRank(severity string) (int, bool) {
 	switch severity {
 	case "low":
@@ -534,10 +568,10 @@ func printTextReport(report scanner.Report) {
 }
 
 func printMarkdownRules(rules []scanner.RuleMetadata) {
-	fmt.Println("| Rule ID | Severity | Description |")
-	fmt.Println("| --- | --- | --- |")
+	fmt.Println("| Rule ID | Provider | Severity | Description |")
+	fmt.Println("| --- | --- | --- | --- |")
 	for _, rule := range rules {
-		fmt.Printf("| `%s` | %s | %s |\n", markdownCell(rule.ID), markdownCell(rule.Severity), markdownCell(rule.Message))
+		fmt.Printf("| `%s` | %s | %s | %s |\n", markdownCell(rule.ID), markdownCell(rule.Provider), markdownCell(rule.Severity), markdownCell(rule.Message))
 	}
 }
 
@@ -619,7 +653,7 @@ Usage:
   open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-trigger-paths cmd/**,internal/**]
   open-secret-guard install-hook [-output .git/hooks/pre-commit]
-  open-secret-guard rules [-format text|json|markdown] [-min-severity low|medium|high|critical]
+  open-secret-guard rules [-format text|json|markdown] [-min-severity low|medium|high|critical] [-provider github,gitlab]
   open-secret-guard scan [path ...] [flags]
 
 Flags:

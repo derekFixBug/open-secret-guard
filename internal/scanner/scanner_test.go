@@ -17,7 +17,7 @@ func TestRulesReturnsPublicMetadata(t *testing.T) {
 		if rule.ID != defaultRules[index].ID {
 			t.Fatalf("rule %d: expected ID %q, got %q", index, defaultRules[index].ID, rule.ID)
 		}
-		if rule.Severity == "" || rule.Message == "" {
+		if rule.Provider == "" || rule.Severity == "" || rule.Message == "" {
 			t.Fatalf("rule %q has incomplete metadata: %#v", rule.ID, rule)
 		}
 	}

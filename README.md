@@ -113,7 +113,7 @@ Generate reviewed allowlist candidates from current findings. This command never
 open-secret-guard allowlist-suggest . -min-severity high > .open-secret-guard.allowlist.candidates
 ```
 
-List the built-in rule IDs, severity levels, and descriptions:
+List the built-in rule IDs, providers, severity levels, and descriptions:
 
 ```sh
 open-secret-guard rules
@@ -129,6 +129,12 @@ Only list rules at or above a severity level:
 
 ```sh
 open-secret-guard rules -min-severity high
+```
+
+Only list rules for selected providers. Multiple providers are comma-separated:
+
+```sh
+open-secret-guard rules -provider github,gitlab
 ```
 
 Print the rules as a Markdown table for project documentation:
@@ -222,7 +228,7 @@ Planned improvements:
 - more provider-specific token patterns;
 - stronger negative tests for noisy patterns;
 - configurable workflow branch filters;
-- provider grouping in generated rule documentation;
+- provider-aware CI presets;
 - optional expiration dates for reviewed allowlist entries;
 - configurable limits for the number of reported findings;
 - tagged releases once the CLI surface stabilizes.

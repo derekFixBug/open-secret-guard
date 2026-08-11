@@ -44,6 +44,7 @@ type Allowlist interface {
 
 type Rule struct {
 	ID       string
+	Provider string
 	Severity string
 	Message  string
 	Pattern  *regexp.Regexp
@@ -51,6 +52,7 @@ type Rule struct {
 
 type RuleMetadata struct {
 	ID       string `json:"id"`
+	Provider string `json:"provider"`
 	Severity string `json:"severity"`
 	Message  string `json:"message"`
 }
@@ -58,126 +60,147 @@ type RuleMetadata struct {
 var defaultRules = []Rule{
 	{
 		ID:       "aws-access-key",
+		Provider: "aws",
 		Severity: "high",
 		Message:  "AWS access key identifiers should not be committed.",
 		Pattern:  regexp.MustCompile(`\b(AKIA|ASIA)[A-Z0-9]{16}\b`),
 	},
 	{
 		ID:       "github-token",
+		Provider: "github",
 		Severity: "high",
 		Message:  "GitHub tokens should be stored in a secret manager, not source files.",
 		Pattern:  regexp.MustCompile(`\b(gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{20,})\b`),
 	},
 	{
 		ID:       "gitlab-token",
+		Provider: "gitlab",
 		Severity: "high",
 		Message:  "GitLab tokens should be stored in a secret manager, not source files.",
 		Pattern:  regexp.MustCompile(`\bglpat-[A-Za-z0-9_-]{20}\b`),
 	},
 	{
 		ID:       "slack-token",
+		Provider: "slack",
 		Severity: "high",
 		Message:  "Slack tokens should be stored in a secret manager, not source files.",
 		Pattern:  regexp.MustCompile(`\bxox[baprs]-[A-Za-z0-9-]{20,}\b`),
 	},
 	{
 		ID:       "slack-webhook",
+		Provider: "slack",
 		Severity: "high",
 		Message:  "Slack incoming webhook URLs should not be committed.",
 		Pattern:  regexp.MustCompile(`https://hooks\.slack\.com/services/T[A-Z0-9]+/B[A-Z0-9]+/[A-Za-z0-9]+`),
 	},
 	{
 		ID:       "discord-bot-token",
+		Provider: "discord",
 		Severity: "high",
 		Message:  "Discord bot tokens should not be committed.",
 		Pattern:  regexp.MustCompile(`\b[MN][A-Za-z0-9_-]{23}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27}\b`),
 	},
 	{
 		ID:       "stripe-live-secret-key",
+		Provider: "stripe",
 		Severity: "high",
 		Message:  "Stripe live secret keys should not be committed.",
 		Pattern:  regexp.MustCompile(`\bsk_live_[A-Za-z0-9]{24,}\b`),
 	},
 	{
 		ID:       "sendgrid-api-key",
+		Provider: "sendgrid",
 		Severity: "high",
 		Message:  "SendGrid API keys should not be committed.",
 		Pattern:  regexp.MustCompile(`\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}\b`),
 	},
 	{
 		ID:       "google-api-key",
+		Provider: "google",
 		Severity: "high",
 		Message:  "Google API keys should be stored in a secret manager, not source files.",
 		Pattern:  regexp.MustCompile(`\bAIza[0-9A-Za-z_-]{35}\b`),
 	},
 	{
 		ID:       "openai-api-key",
+		Provider: "openai",
 		Severity: "high",
 		Message:  "OpenAI or OpenAI-compatible API keys should not be committed.",
 		Pattern:  regexp.MustCompile(`\bsk-(proj-[A-Za-z0-9_-]{20,}|[A-Za-z0-9]{32,})\b`),
 	},
 	{
 		ID:       "anthropic-api-key",
+		Provider: "anthropic",
 		Severity: "high",
 		Message:  "Anthropic API keys should not be committed.",
 		Pattern:  regexp.MustCompile(`\bsk-ant-[A-Za-z0-9_-]{20,}\b`),
 	},
 	{
 		ID:       "huggingface-token",
+		Provider: "huggingface",
 		Severity: "high",
 		Message:  "Hugging Face access tokens should not be committed.",
 		Pattern:  regexp.MustCompile(`\bhf_[A-Za-z0-9]{34,}\b`),
 	},
 	{
 		ID:       "npm-access-token",
+		Provider: "npm",
 		Severity: "high",
 		Message:  "npm access tokens should not be committed.",
 		Pattern:  regexp.MustCompile(`\bnpm_[A-Za-z0-9]{36}\b`),
 	},
 	{
 		ID:       "pypi-token",
+		Provider: "pypi",
 		Severity: "high",
 		Message:  "PyPI API tokens should not be committed.",
 		Pattern:  regexp.MustCompile(`\bpypi-AgEIcHlwaS5vcmc[A-Za-z0-9_-]{20,}\b`),
 	},
 	{
 		ID:       "digitalocean-token",
+		Provider: "digitalocean",
 		Severity: "high",
 		Message:  "DigitalOcean API tokens should not be committed.",
 		Pattern:  regexp.MustCompile(`\bdo[opr]_v1_[a-f0-9]{64}\b`),
 	},
 	{
 		ID:       "shopify-access-token",
+		Provider: "shopify",
 		Severity: "high",
 		Message:  "Shopify access tokens should not be committed.",
 		Pattern:  regexp.MustCompile(`\bshp(at|ca|pa|ss)_[a-fA-F0-9]{32}\b`),
 	},
 	{
 		ID:       "terraform-cloud-token",
+		Provider: "terraform-cloud",
 		Severity: "high",
 		Message:  "Terraform Cloud tokens should not be committed.",
 		Pattern:  regexp.MustCompile(`\b[A-Za-z0-9]{14}\.atlasv1\.[A-Za-z0-9_-]{67}\b`),
 	},
 	{
 		ID:       "jwt-token",
+		Provider: "generic",
 		Severity: "high",
 		Message:  "JWT bearer tokens should not be committed.",
 		Pattern:  regexp.MustCompile(`\beyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b`),
 	},
 	{
 		ID:       "private-key",
+		Provider: "generic",
 		Severity: "critical",
 		Message:  "Private keys should never be committed to source control.",
 		Pattern:  regexp.MustCompile(`-----BEGIN (RSA |DSA |EC |OPENSSH |PGP )?PRIVATE KEY-----`),
 	},
 	{
 		ID:       "assigned-secret",
+		Provider: "generic",
 		Severity: "medium",
 		Message:  "This assignment looks like it may contain a secret value.",
 		Pattern:  regexp.MustCompile(`(?i)\b(password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key)\b\s*[:=]\s*['"]?[^'"\s]{8,}`),
 	},
 	{
 		ID:       "database-url",
+		Provider: "generic",
 		Severity: "medium",
 		Message:  "Database URLs with inline credentials should be kept out of source files.",
 		Pattern:  regexp.MustCompile(`(?i)\b(postgres|postgresql|mysql|mongodb|redis)://[^/\s:@]+:[^/\s:@]+@`),
@@ -189,6 +212,7 @@ func Rules() []RuleMetadata {
 	for _, rule := range defaultRules {
 		rules = append(rules, RuleMetadata{
 			ID:       rule.ID,
+			Provider: rule.Provider,
 			Severity: rule.Severity,
 			Message:  rule.Message,
 		})
