@@ -78,3 +78,10 @@ func TestGitHubActionsSupportsTriggerAndScanPaths(t *testing.T) {
 		}
 	}
 }
+
+func TestGitHubActionsIncludesConfiguredMaximumFileSize(t *testing.T) {
+	content := GitHubActions(GitHubActionsOptions{MaxFileBytes: 8 * 1024 * 1024})
+	if !strings.Contains(content, "-max-file-bytes 8388608 -fail-on-findings") {
+		t.Fatalf("expected workflow to include configured file size:\n%s", content)
+	}
+}

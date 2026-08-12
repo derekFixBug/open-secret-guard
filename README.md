@@ -173,6 +173,12 @@ Generate a Code Scanning-ready workflow that uploads SARIF results:
 open-secret-guard github-action -allowlist .open-secret-guard.allowlist -sarif-output open-secret-guard.sarif -output .github/workflows/secret-guard.yml
 ```
 
+Use the same larger file-size limit in generated CI workflows when repositories contain minified or generated configuration files:
+
+```sh
+open-secret-guard github-action -max-file-bytes 8388608 -output .github/workflows/secret-guard.yml
+```
+
 For a monorepo, generate a workflow that runs only when selected directories change and scans only those directories:
 
 ```sh

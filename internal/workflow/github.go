@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -12,6 +13,7 @@ type GitHubActionsOptions struct {
 	SARIFOutput   string
 	ScanPaths     string
 	TriggerPaths  string
+	MaxFileBytes  int
 }
 
 func GitHubActions(options GitHubActionsOptions) string {
@@ -35,6 +37,9 @@ func GitHubActions(options GitHubActionsOptions) string {
 	}
 	if strings.TrimSpace(options.OnlyRules) != "" {
 		scanArgs = append(scanArgs, "-only-rules", shellQuote(options.OnlyRules))
+	}
+	if options.MaxFileBytes > 0 {
+		scanArgs = append(scanArgs, "-max-file-bytes", strconv.Itoa(options.MaxFileBytes))
 	}
 	scanArgs = append(scanArgs, "-fail-on-findings")
 

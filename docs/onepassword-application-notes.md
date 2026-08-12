@@ -40,3 +40,4 @@ The project can use 1Password to store release credentials, test tokens, package
 - 2026-08-07: Added reviewed allowlist candidate generation without exposing matched values.
 - 2026-08-10: Added configurable scan file-size limits and long-line support for generated configuration files.
 - 2026-08-11: Added provider-aware rule metadata and filtering for focused documentation and CI setup.
+- 2026-08-12: Added generated CI workflow support for configurable scan file-size limits.
