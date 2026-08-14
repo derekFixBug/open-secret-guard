@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `-provider` filtering to `scan`, `allowlist-suggest`, and generated GitHub Actions workflows for focused provider-specific checks.
 - Added `github-action -max-file-bytes` so generated CI workflows can scan the same larger files as local runs.
 - Added provider metadata and `rules -provider` filtering for provider-focused rule documentation and CI setup.
 - Added `-max-file-bytes` to scan larger generated or minified configuration files, and support for long lines within the selected limit.

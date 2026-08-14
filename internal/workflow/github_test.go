@@ -25,6 +25,7 @@ func TestGitHubActionsIncludesScanOptions(t *testing.T) {
 		AllowlistPath: ".open-secret-guard.allowlist",
 		MinSeverity:   "high",
 		OnlyRules:     "github-token,private-key",
+		Provider:      "github,generic",
 		GoVersion:     "1.23",
 	})
 
@@ -33,6 +34,7 @@ func TestGitHubActionsIncludesScanOptions(t *testing.T) {
 		"-allowlist '.open-secret-guard.allowlist'",
 		"-min-severity 'high'",
 		"-only-rules 'github-token,private-key'",
+		"-provider 'github,generic'",
 		"-fail-on-findings",
 	}
 	for _, item := range required {

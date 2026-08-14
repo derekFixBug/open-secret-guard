@@ -78,6 +78,7 @@ func runAllowlistSuggest(args []string) error {
 	exclude := flags.String("exclude", "", "comma-separated file or directory patterns to skip")
 	minSeverity := flags.String("min-severity", "", "minimum severity to include: low, medium, high, or critical")
 	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs to include")
+	provider := flags.String("provider", "", "comma-separated providers to include")
 	maxFileBytes := flags.Int("max-file-bytes", 0, "maximum scanned file size in bytes; 0 uses the default")
 
 	normalizedArgs := normalizeScanArgs(args)
@@ -100,6 +101,10 @@ func runAllowlistSuggest(args []string) error {
 		return err
 	}
 	report, err = filterReportByRules(report, *onlyRules)
+	if err != nil {
+		return err
+	}
+	report, err = filterReportByProvider(report, *provider)
 	if err != nil {
 		return err
 	}
@@ -161,6 +166,7 @@ func runGitHubAction(args []string) error {
 	allowlistPath := flags.String("allowlist", "", "allowlist path used by the scan step")
 	minSeverity := flags.String("min-severity", "", "minimum severity used by the scan step")
 	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs used by the scan step")
+	provider := flags.String("provider", "", "comma-separated providers used by the scan step")
 	goVersion := flags.String("go-version", "1.22", "Go version used by the workflow")
 	sarifOutput := flags.String("sarif-output", "", "path for optional SARIF output uploaded to GitHub code scanning")
 	scanPaths := flags.String("scan-paths", "", "comma-separated paths scanned by the generated workflow")
@@ -181,6 +187,7 @@ func runGitHubAction(args []string) error {
 		AllowlistPath: *allowlistPath,
 		MinSeverity:   *minSeverity,
 		OnlyRules:     *onlyRules,
+		Provider:      *provider,
 		GoVersion:     *goVersion,
 		SARIFOutput:   *sarifOutput,
 		ScanPaths:     *scanPaths,
@@ -269,6 +276,7 @@ func runScan(args []string) error {
 	allowlistPath := flags.String("allowlist", "", "path to an allowlist file")
 	minSeverity := flags.String("min-severity", "", "minimum severity to report: low, medium, high, or critical")
 	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs to include in the report")
+	provider := flags.String("provider", "", "comma-separated providers to include in the report")
 	maxFileBytes := flags.Int("max-file-bytes", 0, "maximum scanned file size in bytes; 0 uses the default")
 
 	normalizedArgs := normalizeScanArgs(args)
@@ -297,6 +305,10 @@ func runScan(args []string) error {
 		return err
 	}
 	report, err = filterReportByRules(report, *onlyRules)
+	if err != nil {
+		return err
+	}
+	report, err = filterReportByProvider(report, *provider)
 	if err != nil {
 		return err
 	}
@@ -354,7 +366,7 @@ func normalizeScanArgs(args []string) []string {
 				index++
 				flagArgs = append(flagArgs, args[index])
 			}
-		case "-allowlist", "-min-severity", "-only-rules", "-max-file-bytes":
+		case "-allowlist", "-min-severity", "-only-rules", "-provider", "-max-file-bytes":
 			flagArgs = append(flagArgs, arg)
 			if index+1 < len(args) {
 				index++
@@ -515,9 +527,51 @@ func filterRulesBySeverity(rules []scanner.RuleMetadata, minSeverity string) ([]
 }
 
 func filterRulesByProvider(rules []scanner.RuleMetadata, providerFilter string) ([]scanner.RuleMetadata, error) {
+	selectedProviders, err := selectedProviders(providerFilter)
+	if err != nil {
+		return rules, err
+	}
+	if len(selectedProviders) == 0 {
+		return rules, nil
+	}
+
+	filtered := rules[:0]
+	for _, rule := range rules {
+		if selectedProviders[strings.ToLower(rule.Provider)] {
+			filtered = append(filtered, rule)
+		}
+	}
+	return filtered, nil
+}
+
+func filterReportByProvider(report scanner.Report, providerFilter string) (scanner.Report, error) {
+	selectedProviders, err := selectedProviders(providerFilter)
+	if err != nil {
+		return report, err
+	}
+	if len(selectedProviders) == 0 {
+		return report, nil
+	}
+
+	ruleProviders := make(map[string]string, len(scanner.Rules()))
+	for _, rule := range scanner.Rules() {
+		ruleProviders[rule.ID] = strings.ToLower(rule.Provider)
+	}
+
+	filtered := report.Findings[:0]
+	for _, finding := range report.Findings {
+		if selectedProviders[ruleProviders[finding.RuleID]] {
+			filtered = append(filtered, finding)
+		}
+	}
+	report.Findings = filtered
+	return report, nil
+}
+
+func selectedProviders(providerFilter string) (map[string]bool, error) {
 	providers := splitCSV(providerFilter)
 	if len(providers) == 0 {
-		return rules, nil
+		return nil, nil
 	}
 
 	knownProviders := make(map[string]bool, len(scanner.Rules()))
@@ -529,18 +583,11 @@ func filterRulesByProvider(rules []scanner.RuleMetadata, providerFilter string) 
 	for _, provider := range providers {
 		provider = strings.ToLower(provider)
 		if !knownProviders[provider] {
-			return rules, fmt.Errorf("unknown provider %q", provider)
+			return nil, fmt.Errorf("unknown provider %q", provider)
 		}
 		selectedProviders[provider] = true
 	}
-
-	filtered := rules[:0]
-	for _, rule := range rules {
-		if selectedProviders[strings.ToLower(rule.Provider)] {
-			filtered = append(filtered, rule)
-		}
-	}
-	return filtered, nil
+	return selectedProviders, nil
 }
 
 func severityRank(severity string) (int, bool) {
@@ -656,7 +703,7 @@ Usage:
   open-secret-guard allowlist-check <allowlist-file>
   open-secret-guard allowlist-suggest [path ...] [flags]
   open-secret-guard env-example <env-file> [-output .env.example]
-  open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608]
+  open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-provider github,gitlab] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608]
   open-secret-guard install-hook [-output .git/hooks/pre-commit]
   open-secret-guard rules [-format text|json|markdown] [-min-severity low|medium|high|critical] [-provider github,gitlab]
   open-secret-guard scan [path ...] [flags]
@@ -666,6 +713,7 @@ Flags:
   -fail-on-findings       Exit non-zero when findings are detected
   -min-severity level     Only report findings at or above low|medium|high|critical
   -only-rules ids         Only report findings for the given comma-separated rule IDs
+  -provider names         Only report findings for the given comma-separated providers
   -include-hidden         Scan hidden files and directories
   -exclude pattern        Comma-separated file or directory patterns to skip
   -allowlist path         Path to an allowlist file

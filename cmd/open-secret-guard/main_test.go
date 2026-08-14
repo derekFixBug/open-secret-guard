@@ -8,9 +8,9 @@ import (
 )
 
 func TestNormalizeScanArgsAllowsFlagsAfterPaths(t *testing.T) {
-	args := normalizeScanArgs([]string{"examples", "-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-max-file-bytes", "3145728", "-include-hidden"})
+	args := normalizeScanArgs([]string{"examples", "-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-include-hidden"})
 
-	want := []string{"-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-max-file-bytes", "3145728", "-include-hidden", "examples"}
+	want := []string{"-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-include-hidden", "examples"}
 	if len(args) != len(want) {
 		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
 	}
@@ -283,5 +283,27 @@ func TestFilterReportByRulesAllowsEmptyFilter(t *testing.T) {
 	}
 	if len(filtered.Findings) != 1 {
 		t.Fatalf("expected 1 finding, got %d: %#v", len(filtered.Findings), filtered.Findings)
+	}
+}
+
+func TestFilterReportByProviderKeepsSelectedProviders(t *testing.T) {
+	report := scanner.Report{Findings: []scanner.Finding{
+		{RuleID: "github-token", Severity: "high"},
+		{RuleID: "gitlab-token", Severity: "high"},
+		{RuleID: "private-key", Severity: "critical"},
+	}}
+
+	filtered, err := filterReportByProvider(report, "github,generic")
+	if err != nil {
+		t.Fatalf("filter report: %v", err)
+	}
+	if len(filtered.Findings) != 2 || filtered.Findings[0].RuleID != "github-token" || filtered.Findings[1].RuleID != "private-key" {
+		t.Fatalf("unexpected filtered report: %#v", filtered)
+	}
+}
+
+func TestFilterReportByProviderRejectsUnknownProvider(t *testing.T) {
+	if _, err := filterReportByProvider(scanner.Report{}, "not-a-provider"); err == nil {
+		t.Fatal("expected unknown provider to fail")
 	}
 }

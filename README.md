@@ -113,6 +113,13 @@ Generate reviewed allowlist candidates from current findings. This command never
 open-secret-guard allowlist-suggest . -min-severity high > .open-secret-guard.allowlist.candidates
 ```
 
+Focus a scan or candidate review on selected providers. Multiple providers are comma-separated:
+
+```sh
+open-secret-guard scan . -provider github,gitlab
+open-secret-guard allowlist-suggest . -provider github -min-severity high
+```
+
 List the built-in rule IDs, providers, severity levels, and descriptions:
 
 ```sh
@@ -165,6 +172,12 @@ Generate a minimal GitHub Actions workflow:
 
 ```sh
 open-secret-guard github-action -allowlist .open-secret-guard.allowlist -output .github/workflows/secret-guard.yml
+```
+
+Pass selected providers through to the workflow scan step when the repository only needs specific credential families:
+
+```sh
+open-secret-guard github-action -provider github,gitlab -output .github/workflows/secret-guard.yml
 ```
 
 Generate a Code Scanning-ready workflow that uploads SARIF results:

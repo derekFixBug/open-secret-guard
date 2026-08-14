@@ -9,6 +9,7 @@ type GitHubActionsOptions struct {
 	AllowlistPath string
 	MinSeverity   string
 	OnlyRules     string
+	Provider      string
 	GoVersion     string
 	SARIFOutput   string
 	ScanPaths     string
@@ -37,6 +38,9 @@ func GitHubActions(options GitHubActionsOptions) string {
 	}
 	if strings.TrimSpace(options.OnlyRules) != "" {
 		scanArgs = append(scanArgs, "-only-rules", shellQuote(options.OnlyRules))
+	}
+	if strings.TrimSpace(options.Provider) != "" {
+		scanArgs = append(scanArgs, "-provider", shellQuote(options.Provider))
 	}
 	if options.MaxFileBytes > 0 {
 		scanArgs = append(scanArgs, "-max-file-bytes", strconv.Itoa(options.MaxFileBytes))
