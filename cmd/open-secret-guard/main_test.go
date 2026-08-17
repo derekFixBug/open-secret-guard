@@ -8,9 +8,9 @@ import (
 )
 
 func TestNormalizeScanArgsAllowsFlagsAfterPaths(t *testing.T) {
-	args := normalizeScanArgs([]string{"examples", "-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-include-hidden"})
+	args := normalizeScanArgs([]string{"examples", "-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-max-findings", "20", "-include-hidden"})
 
-	want := []string{"-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-include-hidden", "examples"}
+	want := []string{"-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-max-findings", "20", "-include-hidden", "examples"}
 	if len(args) != len(want) {
 		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
 	}
@@ -305,5 +305,65 @@ func TestFilterReportByProviderKeepsSelectedProviders(t *testing.T) {
 func TestFilterReportByProviderRejectsUnknownProvider(t *testing.T) {
 	if _, err := filterReportByProvider(scanner.Report{}, "not-a-provider"); err == nil {
 		t.Fatal("expected unknown provider to fail")
+	}
+}
+
+func TestLimitReportFindingsTruncatesSortedFindings(t *testing.T) {
+	report := scanner.Report{Findings: []scanner.Finding{
+		{RuleID: "github-token", Path: "config/.env", Line: 3},
+		{RuleID: "gitlab-token", Path: "config/.env", Line: 7},
+		{RuleID: "private-key", Path: "secrets/key.pem", Line: 1},
+	}}
+
+	limited, err := limitReportFindings(report, 2)
+	if err != nil {
+		t.Fatalf("limit report: %v", err)
+	}
+	if len(limited.Findings) != 2 {
+		t.Fatalf("expected 2 findings, got %d: %#v", len(limited.Findings), limited.Findings)
+	}
+	if limited.Findings[0].RuleID != "github-token" || limited.Findings[1].RuleID != "gitlab-token" {
+		t.Fatalf("expected the first findings in sorted order, got %#v", limited.Findings)
+	}
+}
+
+func TestLimitReportFindingsKeepsAllWhenUnset(t *testing.T) {
+	report := scanner.Report{Findings: []scanner.Finding{
+		{RuleID: "github-token"},
+		{RuleID: "private-key"},
+	}}
+
+	limited, err := limitReportFindings(report, 0)
+	if err != nil {
+		t.Fatalf("limit report: %v", err)
+	}
+	if len(limited.Findings) != 2 {
+		t.Fatalf("expected all findings, got %d", len(limited.Findings))
+	}
+}
+
+func TestLimitReportFindingsKeepsShorterReports(t *testing.T) {
+	report := scanner.Report{Findings: []scanner.Finding{
+		{RuleID: "github-token"},
+	}}
+
+	limited, err := limitReportFindings(report, 5)
+	if err != nil {
+		t.Fatalf("limit report: %v", err)
+	}
+	if len(limited.Findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(limited.Findings))
+	}
+}
+
+func TestRunScanRejectsNegativeMaxFindings(t *testing.T) {
+	if err := runScan([]string{".", "-max-findings", "-1"}); err == nil {
+		t.Fatal("expected negative max-findings to fail")
+	}
+}
+
+func TestRunAllowlistSuggestRejectsNegativeMaxFindings(t *testing.T) {
+	if err := runAllowlistSuggest([]string{".", "-max-findings", "-1"}); err == nil {
+		t.Fatal("expected negative max-findings to fail")
 	}
 }

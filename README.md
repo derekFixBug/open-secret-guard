@@ -83,6 +83,12 @@ Increase the maximum file size for generated or minified configuration files. Th
 open-secret-guard scan . -max-file-bytes 8388608
 ```
 
+Limit the number of reported findings. Findings are sorted by path and line before the limit is applied, so the output stays deterministic:
+
+```sh
+open-secret-guard scan . -max-findings 20
+```
+
 Allow a reviewed finding without skipping the whole file:
 
 ```sh
@@ -249,7 +255,6 @@ Planned improvements:
 - configurable workflow branch filters;
 - provider-aware CI presets;
 - optional expiration dates for reviewed allowlist entries;
-- configurable limits for the number of reported findings;
 - tagged releases once the CLI surface stabilizes.
 
 ## License

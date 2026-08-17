@@ -80,10 +80,14 @@ func runAllowlistSuggest(args []string) error {
 	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs to include")
 	provider := flags.String("provider", "", "comma-separated providers to include")
 	maxFileBytes := flags.Int("max-file-bytes", 0, "maximum scanned file size in bytes; 0 uses the default")
+	maxFindings := flags.Int("max-findings", 0, "maximum number of findings to include; 0 includes all")
 
 	normalizedArgs := normalizeScanArgs(args)
 	if err := flags.Parse(normalizedArgs); err != nil {
 		return err
+	}
+	if *maxFindings < 0 {
+		return errors.New("max-findings cannot be negative")
 	}
 
 	paths := flags.Args()
@@ -109,6 +113,10 @@ func runAllowlistSuggest(args []string) error {
 		return err
 	}
 	report, err = filterReportBySeverity(report, *minSeverity)
+	if err != nil {
+		return err
+	}
+	report, err = limitReportFindings(report, *maxFindings)
 	if err != nil {
 		return err
 	}
@@ -278,10 +286,14 @@ func runScan(args []string) error {
 	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs to include in the report")
 	provider := flags.String("provider", "", "comma-separated providers to include in the report")
 	maxFileBytes := flags.Int("max-file-bytes", 0, "maximum scanned file size in bytes; 0 uses the default")
+	maxFindings := flags.Int("max-findings", 0, "maximum number of findings to report; 0 reports all")
 
 	normalizedArgs := normalizeScanArgs(args)
 	if err := flags.Parse(normalizedArgs); err != nil {
 		return err
+	}
+	if *maxFindings < 0 {
+		return errors.New("max-findings cannot be negative")
 	}
 
 	paths := flags.Args()
@@ -313,6 +325,10 @@ func runScan(args []string) error {
 		return err
 	}
 	report, err = filterReportBySeverity(report, *minSeverity)
+	if err != nil {
+		return err
+	}
+	report, err = limitReportFindings(report, *maxFindings)
 	if err != nil {
 		return err
 	}
@@ -366,7 +382,7 @@ func normalizeScanArgs(args []string) []string {
 				index++
 				flagArgs = append(flagArgs, args[index])
 			}
-		case "-allowlist", "-min-severity", "-only-rules", "-provider", "-max-file-bytes":
+		case "-allowlist", "-min-severity", "-only-rules", "-provider", "-max-file-bytes", "-max-findings":
 			flagArgs = append(flagArgs, arg)
 			if index+1 < len(args) {
 				index++
@@ -544,6 +560,17 @@ func filterRulesByProvider(rules []scanner.RuleMetadata, providerFilter string) 
 	return filtered, nil
 }
 
+func limitReportFindings(report scanner.Report, maxFindings int) (scanner.Report, error) {
+	if maxFindings < 0 {
+		return report, errors.New("max-findings cannot be negative")
+	}
+	if maxFindings == 0 || len(report.Findings) <= maxFindings {
+		return report, nil
+	}
+	report.Findings = report.Findings[:maxFindings]
+	return report, nil
+}
+
 func filterReportByProvider(report scanner.Report, providerFilter string) (scanner.Report, error) {
 	selectedProviders, err := selectedProviders(providerFilter)
 	if err != nil {
@@ -717,5 +744,6 @@ Flags:
   -include-hidden         Scan hidden files and directories
   -exclude pattern        Comma-separated file or directory patterns to skip
   -allowlist path         Path to an allowlist file
-  -max-file-bytes count   Maximum scanned file size; 0 uses the default`)
+  -max-file-bytes count   Maximum scanned file size; 0 uses the default
+  -max-findings count     Maximum number of findings to report; 0 reports all`)
 }
