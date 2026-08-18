@@ -277,7 +277,7 @@ func runScan(args []string) error {
 	flags := flag.NewFlagSet("scan", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 
-	format := flags.String("format", "text", "output format: text, json, sarif, or summary")
+	format := flags.String("format", "text", "output format: text, json, sarif, summary, or markdown")
 	failOnFindings := flags.Bool("fail-on-findings", false, "exit with a non-zero status when findings are detected")
 	includeHidden := flags.Bool("include-hidden", false, "scan hidden files and directories")
 	exclude := flags.String("exclude", "", "comma-separated file or directory patterns to skip")
@@ -350,6 +350,8 @@ func runScan(args []string) error {
 		}
 	case "summary":
 		printSummaryReport(report)
+	case "markdown":
+		printMarkdownReport(report)
 	default:
 		return fmt.Errorf("unsupported format %q", *format)
 	}
@@ -658,6 +660,10 @@ func printSummaryReport(report scanner.Report) {
 	fmt.Print(summaryText(report))
 }
 
+func printMarkdownReport(report scanner.Report) {
+	fmt.Print(markdownReportText(report))
+}
+
 func allowlistSuggestionText(report scanner.Report) string {
 	lines := []string{
 		"# Review every entry before adding it to an allowlist.",
@@ -711,6 +717,33 @@ func summaryText(report scanner.Report) string {
 	return strings.Join(lines, "\n") + "\n"
 }
 
+func markdownReportText(report scanner.Report) string {
+	if len(report.Findings) == 0 {
+		return "No likely secrets found.\n"
+	}
+
+	providers := make(map[string]string, len(scanner.Rules()))
+	for _, rule := range scanner.Rules() {
+		providers[rule.ID] = rule.Provider
+	}
+
+	lines := []string{
+		"| Path | Line | Rule | Provider | Severity | Description |",
+		"| --- | ---: | --- | --- | --- | --- |",
+	}
+	for _, finding := range report.Findings {
+		lines = append(lines, fmt.Sprintf("| `%s` | %d | `%s` | %s | %s | %s |",
+			markdownCell(finding.Path),
+			finding.Line,
+			markdownCell(finding.RuleID),
+			markdownCell(providers[finding.RuleID]),
+			markdownCell(finding.Severity),
+			markdownCell(finding.Message),
+		))
+	}
+	return strings.Join(lines, "\n") + "\n"
+}
+
 func markdownCell(value string) string {
 	value = strings.ReplaceAll(value, "|", "\\|")
 	return strings.ReplaceAll(value, "\n", " ")
@@ -736,7 +769,7 @@ Usage:
   open-secret-guard scan [path ...] [flags]
 
 Flags:
-  -format text|json|sarif|summary Output format
+  -format text|json|sarif|summary|markdown Output format
   -fail-on-findings       Exit non-zero when findings are detected
   -min-severity level     Only report findings at or above low|medium|high|critical
   -only-rules ids         Only report findings for the given comma-separated rule IDs

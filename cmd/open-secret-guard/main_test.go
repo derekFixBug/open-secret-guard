@@ -166,6 +166,39 @@ func TestSummaryReportIncludesCountsWithoutMatches(t *testing.T) {
 	}
 }
 
+func TestMarkdownReportIncludesRuleMetadataWithoutMatches(t *testing.T) {
+	report := scanner.Report{Findings: []scanner.Finding{
+		{
+			RuleID:        "github-token",
+			Severity:      "high",
+			Path:          "config|example.env",
+			Line:          4,
+			Message:       "GitHub tokens should be stored in a secret manager, not source files.",
+			RedactedMatch: "never-print-this",
+		},
+	}}
+
+	markdown := markdownReportText(report)
+	for _, item := range []string{
+		"| Path | Line | Rule | Provider | Severity | Description |",
+		"`config\\|example.env`",
+		"| 4 | `github-token` | github | high |",
+	} {
+		if !strings.Contains(markdown, item) {
+			t.Fatalf("expected markdown report to contain %q:\n%s", item, markdown)
+		}
+	}
+	if strings.Contains(markdown, "never-print-this") {
+		t.Fatalf("markdown report should not contain matches:\n%s", markdown)
+	}
+}
+
+func TestMarkdownReportExplainsNoFindings(t *testing.T) {
+	if got := markdownReportText(scanner.Report{}); got != "No likely secrets found.\n" {
+		t.Fatalf("unexpected no-findings report %q", got)
+	}
+}
+
 func TestFilterRulesBySeverityKeepsRulesAtOrAboveThreshold(t *testing.T) {
 	rules := []scanner.RuleMetadata{
 		{ID: "assigned-secret", Severity: "medium"},

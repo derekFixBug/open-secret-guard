@@ -162,6 +162,12 @@ Print a CI-friendly scan summary without paths or matched values:
 open-secret-guard scan . -format summary
 ```
 
+Create a Markdown findings table for a pull request or issue. It includes paths, rules, providers, and severity levels, but never matched values:
+
+```sh
+open-secret-guard scan . -format markdown
+```
+
 Generate a safe `.env.example` from a local `.env` file:
 
 ```sh
