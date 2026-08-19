@@ -14,6 +14,7 @@ type GitHubActionsOptions struct {
 	SARIFOutput   string
 	ScanPaths     string
 	TriggerPaths  string
+	Branches      string
 	MaxFileBytes  int
 }
 
@@ -47,7 +48,7 @@ func GitHubActions(options GitHubActionsOptions) string {
 	}
 	scanArgs = append(scanArgs, "-fail-on-findings")
 
-	workflow := "name: Secret guard\n\n" + workflowTriggers(splitCSV(options.TriggerPaths))
+	workflow := "name: Secret guard\n\n" + workflowTriggers(splitCSV(options.TriggerPaths), splitCSV(options.Branches))
 
 	if strings.TrimSpace(options.SARIFOutput) != "" {
 		workflow += "permissions:\n" +
@@ -99,8 +100,15 @@ func splitCSV(value string) []string {
 	return values
 }
 
-func workflowTriggers(paths []string) string {
-	workflow := "on:\n  pull_request:\n"
+func workflowTriggers(paths []string, branches []string) string {
+	if len(branches) == 0 {
+		branches = []string{"main"}
+	}
+
+	workflow := "on:\n  pull_request:\n    branches:\n"
+	for _, branch := range branches {
+		workflow += "      - " + yamlSingleQuote(branch) + "\n"
+	}
 	if len(paths) > 0 {
 		workflow += "    paths:\n"
 		for _, path := range paths {
@@ -108,7 +116,10 @@ func workflowTriggers(paths []string) string {
 		}
 	}
 
-	workflow += "  push:\n    branches: [main]\n"
+	workflow += "  push:\n    branches:\n"
+	for _, branch := range branches {
+		workflow += "      - " + yamlSingleQuote(branch) + "\n"
+	}
 	if len(paths) > 0 {
 		workflow += "    paths:\n"
 		for _, path := range paths {

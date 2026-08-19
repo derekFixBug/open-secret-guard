@@ -11,6 +11,8 @@ func TestGitHubActionsUsesDefaults(t *testing.T) {
 	required := []string{
 		"name: Secret guard",
 		"go-version: '1.22'",
+		"pull_request:\n    branches:\n      - 'main'",
+		"push:\n    branches:\n      - 'main'",
 		"go run ./cmd/open-secret-guard scan . -fail-on-findings",
 	}
 	for _, item := range required {
@@ -70,9 +72,23 @@ func TestGitHubActionsSupportsTriggerAndScanPaths(t *testing.T) {
 	})
 
 	required := []string{
-		"pull_request:\n    paths:\n      - 'cmd/**'\n      - 'internal/**'",
-		"push:\n    branches: [main]\n    paths:\n      - 'cmd/**'\n      - 'internal/**'",
+		"pull_request:\n    branches:\n      - 'main'\n    paths:\n      - 'cmd/**'\n      - 'internal/**'",
+		"push:\n    branches:\n      - 'main'\n    paths:\n      - 'cmd/**'\n      - 'internal/**'",
 		"go run ./cmd/open-secret-guard scan 'cmd' 'internal' -fail-on-findings",
+	}
+	for _, item := range required {
+		if !strings.Contains(content, item) {
+			t.Fatalf("expected workflow to contain %q:\n%s", item, content)
+		}
+	}
+}
+
+func TestGitHubActionsSupportsConfiguredBranches(t *testing.T) {
+	content := GitHubActions(GitHubActionsOptions{Branches: "main,develop,release/**"})
+
+	required := []string{
+		"pull_request:\n    branches:\n      - 'main'\n      - 'develop'\n      - 'release/**'",
+		"push:\n    branches:\n      - 'main'\n      - 'develop'\n      - 'release/**'",
 	}
 	for _, item := range required {
 		if !strings.Contains(content, item) {

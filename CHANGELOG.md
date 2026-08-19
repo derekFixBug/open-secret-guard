@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `github-action -branches` to configure the pull request and push branches generated workflows should watch.
 - Added `scan -format markdown` for shareable findings tables that include rule metadata without matched secret values.
 - Added `-max-findings` to `scan` and `allowlist-suggest` so very large reports can be capped; findings stay sorted by path and line before the limit is applied.
 - Added `-provider` filtering to `scan`, `allowlist-suggest`, and generated GitHub Actions workflows for focused provider-specific checks.
