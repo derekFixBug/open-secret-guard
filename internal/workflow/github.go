@@ -16,6 +16,7 @@ type GitHubActionsOptions struct {
 	TriggerPaths  string
 	Branches      string
 	MaxFileBytes  int
+	MaxFindings   int
 }
 
 func GitHubActions(options GitHubActionsOptions) string {
@@ -45,6 +46,9 @@ func GitHubActions(options GitHubActionsOptions) string {
 	}
 	if options.MaxFileBytes > 0 {
 		scanArgs = append(scanArgs, "-max-file-bytes", strconv.Itoa(options.MaxFileBytes))
+	}
+	if options.MaxFindings > 0 {
+		scanArgs = append(scanArgs, "-max-findings", strconv.Itoa(options.MaxFindings))
 	}
 	scanArgs = append(scanArgs, "-fail-on-findings")
 

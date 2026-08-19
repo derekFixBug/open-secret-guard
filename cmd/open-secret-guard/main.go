@@ -181,6 +181,7 @@ func runGitHubAction(args []string) error {
 	triggerPaths := flags.String("trigger-paths", "", "comma-separated paths that trigger the generated workflow")
 	branches := flags.String("branches", "", "comma-separated branches that trigger the generated workflow; defaults to main")
 	maxFileBytes := flags.Int("max-file-bytes", 0, "maximum file size used by the generated scan; 0 uses the default")
+	maxFindings := flags.Int("max-findings", 0, "maximum findings reported by the generated scan; 0 reports all")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -190,6 +191,9 @@ func runGitHubAction(args []string) error {
 	}
 	if *maxFileBytes < 0 {
 		return errors.New("max-file-bytes cannot be negative")
+	}
+	if *maxFindings < 0 {
+		return errors.New("max-findings cannot be negative")
 	}
 
 	content := workflow.GitHubActions(workflow.GitHubActionsOptions{
@@ -203,6 +207,7 @@ func runGitHubAction(args []string) error {
 		TriggerPaths:  *triggerPaths,
 		Branches:      *branches,
 		MaxFileBytes:  *maxFileBytes,
+		MaxFindings:   *maxFindings,
 	})
 	if *outputPath == "" {
 		fmt.Print(content)
@@ -765,7 +770,7 @@ Usage:
   open-secret-guard allowlist-check <allowlist-file>
   open-secret-guard allowlist-suggest [path ...] [flags]
   open-secret-guard env-example <env-file> [-output .env.example]
-  open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-provider github,gitlab] [-branches main,develop] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608]
+  open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-provider github,gitlab] [-branches main,develop] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608] [-max-findings 20]
   open-secret-guard install-hook [-output .git/hooks/pre-commit]
   open-secret-guard rules [-format text|json|markdown] [-min-severity low|medium|high|critical] [-provider github,gitlab]
   open-secret-guard scan [path ...] [flags]

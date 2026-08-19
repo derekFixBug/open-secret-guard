@@ -103,3 +103,10 @@ func TestGitHubActionsIncludesConfiguredMaximumFileSize(t *testing.T) {
 		t.Fatalf("expected workflow to include configured file size:\n%s", content)
 	}
 }
+
+func TestGitHubActionsIncludesConfiguredMaximumFindings(t *testing.T) {
+	content := GitHubActions(GitHubActionsOptions{MaxFindings: 25})
+	if !strings.Contains(content, "-max-findings 25 -fail-on-findings") {
+		t.Fatalf("expected workflow to include configured findings limit:\n%s", content)
+	}
+}

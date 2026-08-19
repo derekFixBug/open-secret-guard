@@ -204,6 +204,12 @@ Use the same larger file-size limit in generated CI workflows when repositories 
 open-secret-guard github-action -max-file-bytes 8388608 -output .github/workflows/secret-guard.yml
 ```
 
+Cap the number of findings printed by CI while preserving the scanner's sorted order:
+
+```sh
+open-secret-guard github-action -max-findings 20 -output .github/workflows/secret-guard.yml
+```
+
 For a monorepo, generate a workflow that runs only when selected directories change and scans only those directories:
 
 ```sh

@@ -86,6 +86,12 @@ func TestRunGitHubActionRejectsNegativeMaximumFileSize(t *testing.T) {
 	}
 }
 
+func TestRunGitHubActionRejectsNegativeMaximumFindings(t *testing.T) {
+	if err := runGitHubAction([]string{"-max-findings", "-1"}); err == nil {
+		t.Fatal("expected negative maximum findings to fail")
+	}
+}
+
 func TestRunAllowlistCheckRequiresOnePath(t *testing.T) {
 	if err := runAllowlistCheck(nil); err == nil {
 		t.Fatal("expected allowlist-check to require a path")

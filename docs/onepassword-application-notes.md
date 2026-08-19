@@ -44,3 +44,4 @@ The project can use 1Password to store release credentials, test tokens, package
 - 2026-08-14: Added provider-focused scan, allowlist-candidate, and generated CI workflow filtering.
 - 2026-08-18: Added Markdown scan reports for reviewable PR and issue findings without exposing matched values.
 - 2026-08-19: Added configurable pull request and push branch filters for generated GitHub Actions workflows.
+- 2026-08-19: Added generated CI workflow support for configurable finding-count limits.
