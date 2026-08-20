@@ -21,6 +21,12 @@ func TestPreCommitQuotesAllowlistPath(t *testing.T) {
 	assertContains(t, got, "-allowlist 'config/team'\"'\"'s allowlist.txt'")
 }
 
+func TestPreCommitIncludesMinimumSeverity(t *testing.T) {
+	got := PreCommit(Options{MinSeverity: "high"})
+
+	assertContains(t, got, "open-secret-guard scan . -min-severity 'high' -fail-on-findings")
+}
+
 func assertContains(t *testing.T, value string, substring string) {
 	t.Helper()
 	if !stringsContains(value, substring) {

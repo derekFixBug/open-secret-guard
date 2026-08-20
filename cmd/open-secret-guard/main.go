@@ -224,6 +224,7 @@ func runInstallHook(args []string) error {
 	outputPath := flags.String("output", "", "path to write the generated pre-commit hook")
 	command := flags.String("command", "open-secret-guard", "command used inside the generated hook")
 	allowlistPath := flags.String("allowlist", "", "allowlist path used inside the generated hook")
+	minSeverity := flags.String("min-severity", "", "minimum severity used inside the generated hook")
 
 	normalizedArgs := normalizeInstallHookArgs(args)
 	if err := flags.Parse(normalizedArgs); err != nil {
@@ -233,10 +234,16 @@ func runInstallHook(args []string) error {
 	if flags.NArg() != 0 {
 		return errors.New("install-hook does not accept positional arguments")
 	}
+	if *minSeverity != "" {
+		if _, ok := severityRank(*minSeverity); !ok {
+			return fmt.Errorf("unsupported minimum severity %q", *minSeverity)
+		}
+	}
 
 	content := hook.PreCommit(hook.Options{
 		Command:       *command,
 		AllowlistPath: *allowlistPath,
+		MinSeverity:   *minSeverity,
 	})
 	if *outputPath == "" {
 		fmt.Print(content)
@@ -433,7 +440,7 @@ func normalizeInstallHookArgs(args []string) []string {
 	for index := 0; index < len(args); index++ {
 		arg := args[index]
 		switch arg {
-		case "-output", "-command", "-allowlist":
+		case "-output", "-command", "-allowlist", "-min-severity":
 			flagArgs = append(flagArgs, arg)
 			if index+1 < len(args) {
 				index++
@@ -771,7 +778,7 @@ Usage:
   open-secret-guard allowlist-suggest [path ...] [flags]
   open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-provider github,gitlab] [-branches main,develop] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608] [-max-findings 20]
-  open-secret-guard install-hook [-output .git/hooks/pre-commit]
+  open-secret-guard install-hook [-output .git/hooks/pre-commit] [-min-severity high]
   open-secret-guard rules [-format text|json|markdown] [-min-severity low|medium|high|critical] [-provider github,gitlab]
   open-secret-guard scan [path ...] [flags]
 

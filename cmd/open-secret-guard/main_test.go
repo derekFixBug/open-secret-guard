@@ -48,9 +48,9 @@ func TestNormalizeEnvExampleArgsAllowsOutputAfterPath(t *testing.T) {
 }
 
 func TestNormalizeInstallHookArgsAllowsFlagsInAnyOrder(t *testing.T) {
-	args := normalizeInstallHookArgs([]string{"-allowlist", ".open-secret-guard.allowlist", "-output", ".git/hooks/pre-commit"})
+	args := normalizeInstallHookArgs([]string{"-allowlist", ".open-secret-guard.allowlist", "-output", ".git/hooks/pre-commit", "-min-severity", "high"})
 
-	want := []string{"-allowlist", ".open-secret-guard.allowlist", "-output", ".git/hooks/pre-commit"}
+	want := []string{"-allowlist", ".open-secret-guard.allowlist", "-output", ".git/hooks/pre-commit", "-min-severity", "high"}
 	if len(args) != len(want) {
 		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
 	}
@@ -59,6 +59,12 @@ func TestNormalizeInstallHookArgsAllowsFlagsInAnyOrder(t *testing.T) {
 		if args[index] != want[index] {
 			t.Fatalf("arg %d: expected %q, got %q", index, want[index], args[index])
 		}
+	}
+}
+
+func TestRunInstallHookRejectsUnsupportedMinimumSeverity(t *testing.T) {
+	if err := runInstallHook([]string{"-min-severity", "urgent"}); err == nil {
+		t.Fatal("expected unsupported minimum severity to fail")
 	}
 }
 

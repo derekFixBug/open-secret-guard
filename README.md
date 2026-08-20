@@ -180,6 +180,12 @@ Generate a local pre-commit hook:
 open-secret-guard install-hook -allowlist .open-secret-guard.allowlist -output .git/hooks/pre-commit
 ```
 
+Only block commits for high- or critical-severity findings:
+
+```sh
+open-secret-guard install-hook -min-severity high -output .git/hooks/pre-commit
+```
+
 Generate a minimal GitHub Actions workflow:
 
 ```sh

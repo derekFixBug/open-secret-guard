@@ -7,6 +7,7 @@ import (
 type Options struct {
 	Command       string
 	AllowlistPath string
+	MinSeverity   string
 }
 
 func PreCommit(options Options) string {
@@ -18,6 +19,9 @@ func PreCommit(options Options) string {
 	args := []string{"scan", "."}
 	if strings.TrimSpace(options.AllowlistPath) != "" {
 		args = append(args, "-allowlist", shellQuote(options.AllowlistPath))
+	}
+	if strings.TrimSpace(options.MinSeverity) != "" {
+		args = append(args, "-min-severity", shellQuote(options.MinSeverity))
 	}
 	args = append(args, "-fail-on-findings")
 
