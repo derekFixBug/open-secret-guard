@@ -228,6 +228,12 @@ Choose the pull request and push branches for repositories that do not use only 
 open-secret-guard github-action -branches 'main,develop,release/**' -output .github/workflows/secret-guard.yml
 ```
 
+Add a weekly scheduled scan alongside pull request and push checks. GitHub Actions cron uses UTC:
+
+```sh
+open-secret-guard github-action -schedule '0 9 * * 1' -output .github/workflows/secret-guard.yml
+```
+
 ## Example output
 
 ```text

@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `github-action -schedule` to include an optional recurring GitHub Actions cron scan.
 - Added `install-hook -min-severity` for pre-commit checks that only block selected risk levels.
 - Added `github-action -max-findings` so generated CI workflows can cap findings like local scans.
 - Added `github-action -branches` to configure the pull request and push branches generated workflows should watch.

@@ -180,6 +180,7 @@ func runGitHubAction(args []string) error {
 	scanPaths := flags.String("scan-paths", "", "comma-separated paths scanned by the generated workflow")
 	triggerPaths := flags.String("trigger-paths", "", "comma-separated paths that trigger the generated workflow")
 	branches := flags.String("branches", "", "comma-separated branches that trigger the generated workflow; defaults to main")
+	schedule := flags.String("schedule", "", "optional GitHub Actions cron schedule for recurring scans")
 	maxFileBytes := flags.Int("max-file-bytes", 0, "maximum file size used by the generated scan; 0 uses the default")
 	maxFindings := flags.Int("max-findings", 0, "maximum findings reported by the generated scan; 0 reports all")
 	if err := flags.Parse(args); err != nil {
@@ -206,6 +207,7 @@ func runGitHubAction(args []string) error {
 		ScanPaths:     *scanPaths,
 		TriggerPaths:  *triggerPaths,
 		Branches:      *branches,
+		Schedule:      *schedule,
 		MaxFileBytes:  *maxFileBytes,
 		MaxFindings:   *maxFindings,
 	})

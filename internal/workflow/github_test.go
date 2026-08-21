@@ -97,6 +97,14 @@ func TestGitHubActionsSupportsConfiguredBranches(t *testing.T) {
 	}
 }
 
+func TestGitHubActionsSupportsScheduledScans(t *testing.T) {
+	content := GitHubActions(GitHubActionsOptions{Schedule: "0 9 * * 1"})
+
+	if !strings.Contains(content, "on:\n  schedule:\n    - cron: '0 9 * * 1'\n  pull_request:") {
+		t.Fatalf("expected workflow to include scheduled trigger:\n%s", content)
+	}
+}
+
 func TestGitHubActionsIncludesConfiguredMaximumFileSize(t *testing.T) {
 	content := GitHubActions(GitHubActionsOptions{MaxFileBytes: 8 * 1024 * 1024})
 	if !strings.Contains(content, "-max-file-bytes 8388608 -fail-on-findings") {
