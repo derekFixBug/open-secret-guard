@@ -47,3 +47,4 @@ The project can use 1Password to store release credentials, test tokens, package
 - 2026-08-19: Added generated CI workflow support for configurable finding-count limits.
 - 2026-08-20: Added severity-aware pre-commit hook generation for focused local secret checks.
 - 2026-08-21: Added optional scheduled GitHub Actions scan generation for recurring secret checks.
+- 2026-08-24: Added optional manual GitHub Actions trigger generation for on-demand secret checks.

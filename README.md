@@ -234,6 +234,12 @@ Add a weekly scheduled scan alongside pull request and push checks. GitHub Actio
 open-secret-guard github-action -schedule '0 9 * * 1' -output .github/workflows/secret-guard.yml
 ```
 
+Include a manual **Run workflow** button for an on-demand review from the GitHub Actions page:
+
+```sh
+open-secret-guard github-action -manual-trigger -output .github/workflows/secret-guard.yml
+```
+
 ## Example output
 
 ```text

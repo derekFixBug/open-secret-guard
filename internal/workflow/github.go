@@ -16,6 +16,7 @@ type GitHubActionsOptions struct {
 	TriggerPaths  string
 	Branches      string
 	Schedule      string
+	ManualTrigger bool
 	MaxFileBytes  int
 	MaxFindings   int
 }
@@ -53,7 +54,7 @@ func GitHubActions(options GitHubActionsOptions) string {
 	}
 	scanArgs = append(scanArgs, "-fail-on-findings")
 
-	workflow := "name: Secret guard\n\n" + workflowTriggers(splitCSV(options.TriggerPaths), splitCSV(options.Branches), options.Schedule)
+	workflow := "name: Secret guard\n\n" + workflowTriggers(splitCSV(options.TriggerPaths), splitCSV(options.Branches), options.Schedule, options.ManualTrigger)
 
 	if strings.TrimSpace(options.SARIFOutput) != "" {
 		workflow += "permissions:\n" +
@@ -105,7 +106,7 @@ func splitCSV(value string) []string {
 	return values
 }
 
-func workflowTriggers(paths []string, branches []string, schedule string) string {
+func workflowTriggers(paths []string, branches []string, schedule string, manualTrigger bool) string {
 	if len(branches) == 0 {
 		branches = []string{"main"}
 	}
@@ -113,6 +114,9 @@ func workflowTriggers(paths []string, branches []string, schedule string) string
 	workflow := "on:\n"
 	if schedule = strings.TrimSpace(schedule); schedule != "" {
 		workflow += "  schedule:\n    - cron: " + yamlSingleQuote(schedule) + "\n"
+	}
+	if manualTrigger {
+		workflow += "  workflow_dispatch:\n"
 	}
 
 	workflow += "  pull_request:\n    branches:\n"

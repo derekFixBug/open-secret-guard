@@ -105,6 +105,14 @@ func TestGitHubActionsSupportsScheduledScans(t *testing.T) {
 	}
 }
 
+func TestGitHubActionsSupportsManualTrigger(t *testing.T) {
+	content := GitHubActions(GitHubActionsOptions{ManualTrigger: true})
+
+	if !strings.Contains(content, "on:\n  workflow_dispatch:\n  pull_request:") {
+		t.Fatalf("expected workflow to include manual trigger:\n%s", content)
+	}
+}
+
 func TestGitHubActionsIncludesConfiguredMaximumFileSize(t *testing.T) {
 	content := GitHubActions(GitHubActionsOptions{MaxFileBytes: 8 * 1024 * 1024})
 	if !strings.Contains(content, "-max-file-bytes 8388608 -fail-on-findings") {
