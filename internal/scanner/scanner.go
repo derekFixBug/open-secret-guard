@@ -80,6 +80,13 @@ var defaultRules = []Rule{
 		Pattern:  regexp.MustCompile(`\bglpat-[A-Za-z0-9_-]{20}\b`),
 	},
 	{
+		ID:       "azure-devops-pat",
+		Provider: "azure-devops",
+		Severity: "high",
+		Message:  "Azure DevOps personal access tokens should not be committed.",
+		Pattern:  regexp.MustCompile(`\b[A-Za-z0-9]{75}AZDO[A-Za-z0-9]{5}\b`),
+	},
+	{
 		ID:       "slack-token",
 		Provider: "slack",
 		Severity: "high",

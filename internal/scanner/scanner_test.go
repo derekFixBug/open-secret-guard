@@ -49,6 +49,7 @@ func TestScanFindsProviderSpecificTokens(t *testing.T) {
 	content := strings.Join([]string{
 		"GITHUB_FINE_GRAINED=" + githubFineGrainedTokenFixture(),
 		"GITLAB_TOKEN=" + gitlabTokenFixture(),
+		"AZURE_DEVOPS_PAT=" + azureDevOpsPATFixture(),
 		"SLACK_BOT_TOKEN=" + slackTokenFixture(),
 		"SLACK_WEBHOOK_URL=" + slackWebhookFixture(),
 		"DISCORD_BOT_TOKEN=" + discordBotTokenFixture(),
@@ -72,6 +73,7 @@ func TestScanFindsProviderSpecificTokens(t *testing.T) {
 	for _, ruleID := range []string{
 		"github-token",
 		"gitlab-token",
+		"azure-devops-pat",
 		"slack-token",
 		"slack-webhook",
 		"discord-bot-token",
@@ -91,6 +93,13 @@ func TestScanFindsProviderSpecificTokens(t *testing.T) {
 		if !found[ruleID] {
 			t.Fatalf("expected %s finding, got %#v", ruleID, findings)
 		}
+	}
+}
+
+func TestScanSkipsInvalidAzureDevOpsPATLengths(t *testing.T) {
+	findings := scanContent("config.env", strings.Repeat("a", 75)+"AZDO"+strings.Repeat("b", 4))
+	if findingRuleIDs(findings)["azure-devops-pat"] {
+		t.Fatalf("expected invalid Azure DevOps PAT length to be skipped, got %#v", findings)
 	}
 }
 
@@ -216,6 +225,10 @@ func githubTokenFixture() string {
 
 func gitlabTokenFixture() string {
 	return "gl" + "pat-1234567890abcdefghij"
+}
+
+func azureDevOpsPATFixture() string {
+	return strings.Repeat("a", 75) + "AZDO" + "12345"
 }
 
 func pypiTokenFixture() string {
