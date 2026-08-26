@@ -222,6 +222,12 @@ For a monorepo, generate a workflow that runs only when selected directories cha
 open-secret-guard github-action -trigger-paths 'services/api/**,packages/shared/**' -scan-paths 'services/api,packages/shared' -output .github/workflows/secret-guard.yml
 ```
 
+Keep generated CI aligned with local scans by excluding demo data or test fixtures:
+
+```sh
+open-secret-guard github-action -exclude 'examples,testdata' -output .github/workflows/secret-guard.yml
+```
+
 Choose the pull request and push branches for repositories that do not use only `main`:
 
 ```sh

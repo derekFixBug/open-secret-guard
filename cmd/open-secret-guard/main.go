@@ -178,6 +178,7 @@ func runGitHubAction(args []string) error {
 	goVersion := flags.String("go-version", "1.22", "Go version used by the workflow")
 	sarifOutput := flags.String("sarif-output", "", "path for optional SARIF output uploaded to GitHub code scanning")
 	scanPaths := flags.String("scan-paths", "", "comma-separated paths scanned by the generated workflow")
+	exclude := flags.String("exclude", "", "comma-separated paths excluded by the generated scan")
 	triggerPaths := flags.String("trigger-paths", "", "comma-separated paths that trigger the generated workflow")
 	branches := flags.String("branches", "", "comma-separated branches that trigger the generated workflow; defaults to main")
 	schedule := flags.String("schedule", "", "optional GitHub Actions cron schedule for recurring scans")
@@ -206,6 +207,7 @@ func runGitHubAction(args []string) error {
 		GoVersion:     *goVersion,
 		SARIFOutput:   *sarifOutput,
 		ScanPaths:     *scanPaths,
+		Exclude:       *exclude,
 		TriggerPaths:  *triggerPaths,
 		Branches:      *branches,
 		Schedule:      *schedule,
@@ -781,7 +783,7 @@ Usage:
   open-secret-guard allowlist-check <allowlist-file>
   open-secret-guard allowlist-suggest [path ...] [flags]
   open-secret-guard env-example <env-file> [-output .env.example]
-  open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-provider github,gitlab] [-branches main,develop] [-schedule '0 9 * * 1'] [-manual-trigger] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608] [-max-findings 20]
+  open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-provider github,gitlab] [-branches main,develop] [-schedule '0 9 * * 1'] [-manual-trigger] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-exclude examples,testdata] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608] [-max-findings 20]
   open-secret-guard install-hook [-output .git/hooks/pre-commit] [-min-severity high]
   open-secret-guard rules [-format text|json|markdown] [-min-severity low|medium|high|critical] [-provider github,gitlab]
   open-secret-guard scan [path ...] [flags]

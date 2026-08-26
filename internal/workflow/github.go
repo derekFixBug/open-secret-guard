@@ -13,6 +13,7 @@ type GitHubActionsOptions struct {
 	GoVersion     string
 	SARIFOutput   string
 	ScanPaths     string
+	Exclude       string
 	TriggerPaths  string
 	Branches      string
 	Schedule      string
@@ -33,6 +34,9 @@ func GitHubActions(options GitHubActionsOptions) string {
 	}
 	if len(scanArgs) == 4 {
 		scanArgs = append(scanArgs, ".")
+	}
+	if strings.TrimSpace(options.Exclude) != "" {
+		scanArgs = append(scanArgs, "-exclude", shellQuote(options.Exclude))
 	}
 	if strings.TrimSpace(options.AllowlistPath) != "" {
 		scanArgs = append(scanArgs, "-allowlist", shellQuote(options.AllowlistPath))

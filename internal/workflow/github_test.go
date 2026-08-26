@@ -25,6 +25,7 @@ func TestGitHubActionsUsesDefaults(t *testing.T) {
 func TestGitHubActionsIncludesScanOptions(t *testing.T) {
 	content := GitHubActions(GitHubActionsOptions{
 		AllowlistPath: ".open-secret-guard.allowlist",
+		Exclude:       "examples,testdata",
 		MinSeverity:   "high",
 		OnlyRules:     "github-token,private-key",
 		Provider:      "github,generic",
@@ -33,6 +34,7 @@ func TestGitHubActionsIncludesScanOptions(t *testing.T) {
 
 	required := []string{
 		"go-version: '1.23'",
+		"-exclude 'examples,testdata'",
 		"-allowlist '.open-secret-guard.allowlist'",
 		"-min-severity 'high'",
 		"-only-rules 'github-token,private-key'",
