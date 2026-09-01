@@ -50,3 +50,4 @@ The project can use 1Password to store release credentials, test tokens, package
 - 2026-08-24: Added optional manual GitHub Actions trigger generation for on-demand secret checks.
 - 2026-08-25: Added detection for the current signed Azure DevOps personal access token format.
 - 2026-08-26: Added generated CI exclusion support for demo data and test fixtures.
+- 2026-09-01: Added 1Password CLI environment-template generation using secret references instead of plaintext values.

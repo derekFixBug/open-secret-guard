@@ -174,6 +174,13 @@ Generate a safe `.env.example` from a local `.env` file:
 open-secret-guard env-example .env -output .env.example
 ```
 
+Generate a 1Password CLI template from `.env.example`. It contains only `op://` secret references, not source values:
+
+```sh
+open-secret-guard 1password-template .env.example -vault 'Open Source' -item 'open-secret-guard' -output .env.1password
+op run --env-file=.env.1password -- your-command
+```
+
 Generate a local pre-commit hook:
 
 ```sh

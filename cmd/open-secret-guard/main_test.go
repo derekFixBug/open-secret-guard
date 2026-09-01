@@ -47,6 +47,28 @@ func TestNormalizeEnvExampleArgsAllowsOutputAfterPath(t *testing.T) {
 	}
 }
 
+func TestNormalize1PasswordTemplateArgsAllowsFlagsAfterPath(t *testing.T) {
+	args := normalize1PasswordTemplateArgs([]string{".env.example", "-vault", "Open Source", "-item", "open-secret-guard", "-output", ".env.1password"})
+	want := []string{"-vault", "Open Source", "-item", "open-secret-guard", "-output", ".env.1password", ".env.example"}
+	if len(args) != len(want) {
+		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
+	}
+	for index := range want {
+		if args[index] != want[index] {
+			t.Fatalf("arg %d: expected %q, got %q", index, want[index], args[index])
+		}
+	}
+}
+
+func TestRun1PasswordTemplateRequiresVaultAndItem(t *testing.T) {
+	if err := run1PasswordTemplate([]string{".env.example", "-item", "project"}); err == nil {
+		t.Fatal("expected missing vault to fail")
+	}
+	if err := run1PasswordTemplate([]string{".env.example", "-vault", "Open Source"}); err == nil {
+		t.Fatal("expected missing item to fail")
+	}
+}
+
 func TestNormalizeInstallHookArgsAllowsFlagsInAnyOrder(t *testing.T) {
 	args := normalizeInstallHookArgs([]string{"-allowlist", ".open-secret-guard.allowlist", "-output", ".git/hooks/pre-commit", "-min-severity", "high"})
 

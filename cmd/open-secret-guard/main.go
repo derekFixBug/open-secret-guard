@@ -12,6 +12,7 @@ import (
 	"github.com/derekFixBug/open-secret-guard/internal/allowlist"
 	"github.com/derekFixBug/open-secret-guard/internal/envexample"
 	"github.com/derekFixBug/open-secret-guard/internal/hook"
+	"github.com/derekFixBug/open-secret-guard/internal/onepassword"
 	"github.com/derekFixBug/open-secret-guard/internal/sarif"
 	"github.com/derekFixBug/open-secret-guard/internal/scanner"
 	"github.com/derekFixBug/open-secret-guard/internal/workflow"
@@ -41,6 +42,8 @@ func run(args []string) error {
 		return runGitHubAction(args[1:])
 	case "install-hook":
 		return runInstallHook(args[1:])
+	case "1password-template":
+		return run1PasswordTemplate(args[1:])
 	case "rules":
 		return runRules(args[1:])
 	case "scan":
@@ -293,6 +296,45 @@ func runEnvExample(args []string) error {
 	return os.WriteFile(*outputPath, []byte(generated), 0o644)
 }
 
+func run1PasswordTemplate(args []string) error {
+	flags := flag.NewFlagSet("1password-template", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+
+	vault := flags.String("vault", "", "1Password vault name used by generated references")
+	item := flags.String("item", "", "1Password item name used by generated references")
+	outputPath := flags.String("output", "", "path to write the generated 1Password environment template")
+	normalizedArgs := normalize1PasswordTemplateArgs(args)
+	if err := flags.Parse(normalizedArgs); err != nil {
+		return err
+	}
+	if strings.TrimSpace(*vault) == "" {
+		return errors.New("1password-template requires -vault")
+	}
+	if strings.TrimSpace(*item) == "" {
+		return errors.New("1password-template requires -item")
+	}
+
+	paths := flags.Args()
+	if len(paths) != 1 {
+		return errors.New("1password-template requires exactly one environment template file")
+	}
+	if *outputPath == paths[0] {
+		return errors.New("output path must be different from input path")
+	}
+
+	content, err := os.ReadFile(paths[0])
+	if err != nil {
+		return err
+	}
+
+	generated := onepassword.Generate(string(content), strings.TrimSpace(*vault), strings.TrimSpace(*item))
+	if *outputPath == "" {
+		fmt.Print(generated)
+		return nil
+	}
+	return os.WriteFile(*outputPath, []byte(generated), 0o644)
+}
+
 func runScan(args []string) error {
 	flags := flag.NewFlagSet("scan", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
@@ -426,6 +468,27 @@ func normalizeEnvExampleArgs(args []string) []string {
 		arg := args[index]
 		switch arg {
 		case "-output":
+			flagArgs = append(flagArgs, arg)
+			if index+1 < len(args) {
+				index++
+				flagArgs = append(flagArgs, args[index])
+			}
+		default:
+			pathArgs = append(pathArgs, arg)
+		}
+	}
+
+	return append(flagArgs, pathArgs...)
+}
+
+func normalize1PasswordTemplateArgs(args []string) []string {
+	var flagArgs []string
+	var pathArgs []string
+
+	for index := 0; index < len(args); index++ {
+		arg := args[index]
+		switch arg {
+		case "-vault", "-item", "-output":
 			flagArgs = append(flagArgs, arg)
 			if index+1 < len(args) {
 				index++
@@ -783,6 +846,7 @@ Usage:
   open-secret-guard allowlist-check <allowlist-file>
   open-secret-guard allowlist-suggest [path ...] [flags]
   open-secret-guard env-example <env-file> [-output .env.example]
+	open-secret-guard 1password-template <env-example-file> -vault <vault> -item <item> [-output .env.1password]
   open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-provider github,gitlab] [-branches main,develop] [-schedule '0 9 * * 1'] [-manual-trigger] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-exclude examples,testdata] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608] [-max-findings 20]
   open-secret-guard install-hook [-output .git/hooks/pre-commit] [-min-severity high]
   open-secret-guard rules [-format text|json|markdown] [-min-severity low|medium|high|critical] [-provider github,gitlab]

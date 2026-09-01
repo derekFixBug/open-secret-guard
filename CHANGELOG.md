@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `1password-template` to generate `op://` environment references from safe `.env.example` files.
 - Added `github-action -exclude` so generated CI can skip demo data and test fixtures.
 - Added detection for the signed 84-character Azure DevOps personal access token format.
 - Added `github-action -manual-trigger` to generate an on-demand GitHub Actions scan trigger.
