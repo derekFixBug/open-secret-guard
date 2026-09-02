@@ -95,16 +95,18 @@ Allow a reviewed finding without skipping the whole file:
 open-secret-guard scan . -allowlist .open-secret-guard.allowlist
 ```
 
-Allowlist entries use this format:
+Allowlist entries use this format. The optional expiry date is inclusive and prevents a review exception from being used indefinitely:
 
 ```text
 rule-id path-glob [line]
+rule-id path-glob [line] [expires-on:YYYY-MM-DD]
 ```
 
 For example:
 
 ```text
 database-url examples/leaky.env 4
+github-token docs/token.md 12 2026-12-31
 ```
 
 Validate an allowlist before using it in CI. The scanner also performs this validation automatically when `-allowlist` is supplied, so misspelled rule IDs and duplicate entries do not silently weaken a scan:
@@ -303,7 +305,6 @@ Planned improvements:
 - stronger negative tests for noisy patterns;
 - configurable workflow branch filters;
 - provider-aware CI presets;
-- optional expiration dates for reviewed allowlist entries;
 - tagged releases once the CLI surface stabilizes.
 
 ## License

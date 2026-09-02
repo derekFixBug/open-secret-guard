@@ -7,14 +7,16 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/derekFixBug/open-secret-guard/internal/scanner"
 )
 
 type Entry struct {
-	RuleID      string `json:"ruleId"`
-	PathPattern string `json:"pathPattern"`
-	Line        int    `json:"line,omitempty"`
+	RuleID      string    `json:"ruleId"`
+	PathPattern string    `json:"pathPattern"`
+	Line        int       `json:"line,omitempty"`
+	ExpiresAt   time.Time `json:"expiresAt,omitempty"`
 }
 
 func Load(path string) ([]Entry, error) {
@@ -48,7 +50,14 @@ func Load(path string) ([]Entry, error) {
 }
 
 func IsAllowed(finding scanner.Finding, entries []Entry) bool {
+	return IsAllowedAt(finding, entries, time.Now().UTC())
+}
+
+func IsAllowedAt(finding scanner.Finding, entries []Entry, now time.Time) bool {
 	for _, entry := range entries {
+		if !entry.ExpiresAt.IsZero() && !now.Before(entry.ExpiresAt.AddDate(0, 0, 1)) {
+			continue
+		}
 		if entry.RuleID != finding.RuleID {
 			continue
 		}
@@ -63,6 +72,10 @@ func IsAllowed(finding scanner.Finding, entries []Entry) bool {
 }
 
 func Validate(entries []Entry, rules []scanner.RuleMetadata) error {
+	return ValidateAt(entries, rules, time.Now().UTC())
+}
+
+func ValidateAt(entries []Entry, rules []scanner.RuleMetadata, now time.Time) error {
 	knownRules := make(map[string]bool, len(rules))
 	for _, rule := range rules {
 		knownRules[rule.ID] = true
@@ -73,6 +86,9 @@ func Validate(entries []Entry, rules []scanner.RuleMetadata) error {
 		entryNumber := index + 1
 		if !knownRules[entry.RuleID] {
 			return fmt.Errorf("entry %d uses unknown rule ID %q", entryNumber, entry.RuleID)
+		}
+		if !entry.ExpiresAt.IsZero() && !now.Before(entry.ExpiresAt.AddDate(0, 0, 1)) {
+			return fmt.Errorf("entry %d expired on %s", entryNumber, entry.ExpiresAt.Format(time.DateOnly))
 		}
 
 		key := fmt.Sprintf("%s\x00%s\x00%d", entry.RuleID, entry.PathPattern, entry.Line)
@@ -87,8 +103,8 @@ func Validate(entries []Entry, rules []scanner.RuleMetadata) error {
 
 func parseLine(line string) (Entry, error) {
 	fields := strings.Fields(line)
-	if len(fields) < 2 || len(fields) > 3 {
-		return Entry{}, fmt.Errorf("expected: rule-id path-glob [line]")
+	if len(fields) < 2 || len(fields) > 4 {
+		return Entry{}, fmt.Errorf("expected: rule-id path-glob [line] [expires-on]")
 	}
 
 	entry := Entry{
@@ -99,12 +115,20 @@ func parseLine(line string) (Entry, error) {
 		return Entry{}, fmt.Errorf("rule id and path pattern are required")
 	}
 
-	if len(fields) == 3 {
-		lineNumber, err := strconv.Atoi(fields[2])
-		if err != nil || lineNumber <= 0 {
-			return Entry{}, fmt.Errorf("line must be a positive integer")
+	for _, field := range fields[2:] {
+		if lineNumber, err := strconv.Atoi(field); err == nil {
+			if lineNumber <= 0 || entry.Line != 0 {
+				return Entry{}, fmt.Errorf("line must be a positive integer")
+			}
+			entry.Line = lineNumber
+			continue
 		}
-		entry.Line = lineNumber
+
+		expiresAt, err := time.Parse(time.DateOnly, field)
+		if err != nil || !entry.ExpiresAt.IsZero() {
+			return Entry{}, fmt.Errorf("expires-on must be a YYYY-MM-DD date")
+		}
+		entry.ExpiresAt = expiresAt
 	}
 
 	return entry, nil

@@ -750,7 +750,7 @@ func printMarkdownReport(report scanner.Report) {
 func allowlistSuggestionText(report scanner.Report) string {
 	lines := []string{
 		"# Review every entry before adding it to an allowlist.",
-		"# Format: rule-id path-glob [line]",
+		"# Format: rule-id path-glob [line] [expires-on:YYYY-MM-DD]",
 	}
 	for _, finding := range report.Findings {
 		lines = append(lines, fmt.Sprintf("%s %s %d", finding.RuleID, finding.Path, finding.Line))

@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added optional expiry dates for allowlist entries so stale review exceptions stop suppressing findings.
 - Added `1password-template` to generate `op://` environment references from safe `.env.example` files.
 - Added `github-action -exclude` so generated CI can skip demo data and test fixtures.
 - Added detection for the signed 84-character Azure DevOps personal access token format.
