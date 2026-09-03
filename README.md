@@ -115,6 +115,12 @@ Validate an allowlist before using it in CI. The scanner also performs this vali
 open-secret-guard allowlist-check .open-secret-guard.allowlist
 ```
 
+Fail a CI check before temporary allowlist exceptions expire. The window includes entries expiring today and never prints matched values:
+
+```sh
+open-secret-guard allowlist-check .open-secret-guard.allowlist -expires-within 30
+```
+
 Generate reviewed allowlist candidates from current findings. This command never changes a file and never prints matched values:
 
 ```sh

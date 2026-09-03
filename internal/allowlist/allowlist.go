@@ -101,6 +101,28 @@ func ValidateAt(entries []Entry, rules []scanner.RuleMetadata, now time.Time) er
 	return nil
 }
 
+// ExpiringWithin returns entries whose inclusive expiry date falls between now
+// and now plus days. Expired entries are excluded because ValidateAt reports
+// those separately.
+func ExpiringWithin(entries []Entry, now time.Time, days int) []Entry {
+	if days < 0 {
+		return nil
+	}
+
+	now = now.UTC()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	latest := today.AddDate(0, 0, days)
+
+	var expiring []Entry
+	for _, entry := range entries {
+		if entry.ExpiresAt.IsZero() || entry.ExpiresAt.Before(today) || entry.ExpiresAt.After(latest) {
+			continue
+		}
+		expiring = append(expiring, entry)
+	}
+	return expiring
+}
+
 func parseLine(line string) (Entry, error) {
 	fields := strings.Fields(line)
 	if len(fields) < 2 || len(fields) > 4 {

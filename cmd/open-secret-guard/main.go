@@ -8,6 +8,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/derekFixBug/open-secret-guard/internal/allowlist"
 	"github.com/derekFixBug/open-secret-guard/internal/envexample"
@@ -57,16 +58,32 @@ func run(args []string) error {
 }
 
 func runAllowlistCheck(args []string) error {
-	if len(args) != 1 {
+	flags := flag.NewFlagSet("allowlist-check", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+
+	expiresWithin := flags.Int("expires-within", -1, "fail when an allowlist entry expires within this many days")
+	normalizedArgs := normalizeAllowlistCheckArgs(args)
+	if err := flags.Parse(normalizedArgs); err != nil {
+		return err
+	}
+	if *expiresWithin < -1 {
+		return errors.New("expires-within cannot be less than -1")
+	}
+
+	paths := flags.Args()
+	if len(paths) != 1 {
 		return errors.New("allowlist-check requires exactly one allowlist file")
 	}
 
-	entries, err := allowlist.Load(args[0])
+	entries, err := allowlist.Load(paths[0])
 	if err != nil {
 		return err
 	}
 	if err := allowlist.Validate(entries, scanner.Rules()); err != nil {
 		return err
+	}
+	if expiring := allowlist.ExpiringWithin(entries, time.Now().UTC(), *expiresWithin); len(expiring) > 0 {
+		return fmt.Errorf("%d allowlist entr%s expire within %d day(s): %s", len(expiring), pluralSuffix(len(expiring)), *expiresWithin, formatExpiringAllowlistEntries(expiring))
 	}
 
 	fmt.Printf("Allowlist is valid: %d entr%s.\n", len(entries), pluralSuffix(len(entries)))
@@ -460,6 +477,27 @@ func normalizeScanArgs(args []string) []string {
 	return append(flagArgs, pathArgs...)
 }
 
+func normalizeAllowlistCheckArgs(args []string) []string {
+	var flagArgs []string
+	var pathArgs []string
+
+	for index := 0; index < len(args); index++ {
+		arg := args[index]
+		switch arg {
+		case "-expires-within":
+			flagArgs = append(flagArgs, arg)
+			if index+1 < len(args) {
+				index++
+				flagArgs = append(flagArgs, args[index])
+			}
+		default:
+			pathArgs = append(pathArgs, arg)
+		}
+	}
+
+	return append(flagArgs, pathArgs...)
+}
+
 func normalizeEnvExampleArgs(args []string) []string {
 	var flagArgs []string
 	var pathArgs []string
@@ -839,11 +877,19 @@ func pluralSuffix(count int) string {
 	return "ies"
 }
 
+func formatExpiringAllowlistEntries(entries []allowlist.Entry) string {
+	formatted := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		formatted = append(formatted, fmt.Sprintf("%s %s (expires %s)", entry.RuleID, entry.PathPattern, entry.ExpiresAt.Format(time.DateOnly)))
+	}
+	return strings.Join(formatted, "; ")
+}
+
 func printUsage() {
 	fmt.Println(`open-secret-guard
 
 Usage:
-  open-secret-guard allowlist-check <allowlist-file>
+  open-secret-guard allowlist-check <allowlist-file> [-expires-within days]
   open-secret-guard allowlist-suggest [path ...] [flags]
   open-secret-guard env-example <env-file> [-output .env.example]
 	open-secret-guard 1password-template <env-example-file> -vault <vault> -item <item> [-output .env.1password]

@@ -126,6 +126,25 @@ func TestRunAllowlistCheckRequiresOnePath(t *testing.T) {
 	}
 }
 
+func TestNormalizeAllowlistCheckArgsAllowsFlagAfterPath(t *testing.T) {
+	args := normalizeAllowlistCheckArgs([]string{".open-secret-guard.allowlist", "-expires-within", "30"})
+	want := []string{"-expires-within", "30", ".open-secret-guard.allowlist"}
+	if len(args) != len(want) {
+		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
+	}
+	for index := range want {
+		if args[index] != want[index] {
+			t.Fatalf("arg %d: expected %q, got %q", index, want[index], args[index])
+		}
+	}
+}
+
+func TestRunAllowlistCheckRejectsInvalidExpiryWindow(t *testing.T) {
+	if err := runAllowlistCheck([]string{"-expires-within", "-2", ".open-secret-guard.allowlist"}); err == nil {
+		t.Fatal("expected invalid expiry window to fail")
+	}
+}
+
 func TestAllowlistSuggestionTextIncludesOnlyReviewableFields(t *testing.T) {
 	report := scanner.Report{Findings: []scanner.Finding{
 		{RuleID: "github-token", Path: "config/.env", Line: 4, RedactedMatch: "should-not-appear"},

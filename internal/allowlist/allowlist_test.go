@@ -141,6 +141,32 @@ func TestValidateAtRejectsExpiredEntry(t *testing.T) {
 	}
 }
 
+func TestExpiringWithinIncludesOnlyActiveEntriesInWindow(t *testing.T) {
+	now := mustDate(t, "2026-09-03")
+	entries := []Entry{
+		{RuleID: "github-token", PathPattern: "expires-today", ExpiresAt: mustDate(t, "2026-09-03")},
+		{RuleID: "private-key", PathPattern: "expires-soon", ExpiresAt: mustDate(t, "2026-09-06")},
+		{RuleID: "database-url", PathPattern: "expires-later", ExpiresAt: mustDate(t, "2026-09-07")},
+		{RuleID: "jwt-token", PathPattern: "expired", ExpiresAt: mustDate(t, "2026-09-02")},
+		{RuleID: "slack-token", PathPattern: "no-expiry"},
+	}
+
+	expiring := ExpiringWithin(entries, now, 3)
+	if len(expiring) != 2 {
+		t.Fatalf("expected 2 expiring entries, got %#v", expiring)
+	}
+	if expiring[0].PathPattern != "expires-today" || expiring[1].PathPattern != "expires-soon" {
+		t.Fatalf("unexpected expiring entries: %#v", expiring)
+	}
+}
+
+func TestExpiringWithinRejectsNegativeWindow(t *testing.T) {
+	entries := []Entry{{RuleID: "github-token", PathPattern: "example", ExpiresAt: mustDate(t, "2026-09-03")}}
+	if got := ExpiringWithin(entries, mustDate(t, "2026-09-03"), -1); len(got) != 0 {
+		t.Fatalf("expected no entries for disabled window, got %#v", got)
+	}
+}
+
 func mustDate(t *testing.T, value string) time.Time {
 	t.Helper()
 	parsed, err := time.Parse(time.DateOnly, value)
