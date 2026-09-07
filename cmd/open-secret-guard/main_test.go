@@ -3,14 +3,15 @@ package main
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/derekFixBug/open-secret-guard/internal/scanner"
 )
 
 func TestNormalizeScanArgsAllowsFlagsAfterPaths(t *testing.T) {
-	args := normalizeScanArgs([]string{"examples", "-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-max-findings", "20", "-include-hidden"})
+	args := normalizeScanArgs([]string{"examples", "-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-max-findings", "20", "-expires-on", "2026-12-31", "-include-hidden"})
 
-	want := []string{"-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-max-findings", "20", "-include-hidden", "examples"}
+	want := []string{"-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-max-findings", "20", "-expires-on", "2026-12-31", "-include-hidden", "examples"}
 	if len(args) != len(want) {
 		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
 	}
@@ -151,7 +152,7 @@ func TestAllowlistSuggestionTextIncludesOnlyReviewableFields(t *testing.T) {
 		{RuleID: "private-key", Path: "secrets/key.pem", Line: 1, RedactedMatch: "should-not-appear"},
 	}}
 
-	suggestions := allowlistSuggestionText(report)
+	suggestions := allowlistSuggestionText(report, "")
 	for _, item := range []string{
 		"# Review every entry before adding it to an allowlist.",
 		"github-token config/.env 4",
@@ -167,9 +168,34 @@ func TestAllowlistSuggestionTextIncludesOnlyReviewableFields(t *testing.T) {
 }
 
 func TestAllowlistSuggestionTextExplainsNoFindings(t *testing.T) {
-	suggestions := allowlistSuggestionText(scanner.Report{})
+	suggestions := allowlistSuggestionText(scanner.Report{}, "")
 	if !strings.Contains(suggestions, "# No findings to suggest.") {
 		t.Fatalf("expected no-findings message:\n%s", suggestions)
+	}
+}
+
+func TestAllowlistSuggestionTextAddsRequestedExpiry(t *testing.T) {
+	report := scanner.Report{Findings: []scanner.Finding{{RuleID: "github-token", Path: "config/example.env", Line: 4}}}
+	suggestions := allowlistSuggestionText(report, "2026-12-31")
+	for _, item := range []string{
+		"# Suggested entries expire on 2026-12-31.",
+		"github-token config/example.env 4 2026-12-31",
+	} {
+		if !strings.Contains(suggestions, item) {
+			t.Fatalf("expected suggestions to contain %q:\n%s", item, suggestions)
+		}
+	}
+}
+
+func TestParseCandidateExpiryRejectsInvalidAndPastDates(t *testing.T) {
+	now := time.Date(2026, time.September, 7, 12, 0, 0, 0, time.UTC)
+	for _, value := range []string{"2026/12/31", "2026-09-06"} {
+		if _, err := parseCandidateExpiry(value, now); err == nil {
+			t.Fatalf("expected %q to fail", value)
+		}
+	}
+	if got, err := parseCandidateExpiry("2026-09-07", now); err != nil || got != "2026-09-07" {
+		t.Fatalf("expected today to be accepted, got %q, %v", got, err)
 	}
 }
 

@@ -101,6 +101,7 @@ func runAllowlistSuggest(args []string) error {
 	provider := flags.String("provider", "", "comma-separated providers to include")
 	maxFileBytes := flags.Int("max-file-bytes", 0, "maximum scanned file size in bytes; 0 uses the default")
 	maxFindings := flags.Int("max-findings", 0, "maximum number of findings to include; 0 includes all")
+	expiresOn := flags.String("expires-on", "", "optional YYYY-MM-DD expiry appended to every suggested entry")
 
 	normalizedArgs := normalizeScanArgs(args)
 	if err := flags.Parse(normalizedArgs); err != nil {
@@ -108,6 +109,10 @@ func runAllowlistSuggest(args []string) error {
 	}
 	if *maxFindings < 0 {
 		return errors.New("max-findings cannot be negative")
+	}
+	expiry, err := parseCandidateExpiry(*expiresOn, time.Now().UTC())
+	if err != nil {
+		return err
 	}
 
 	paths := flags.Args()
@@ -141,7 +146,7 @@ func runAllowlistSuggest(args []string) error {
 		return err
 	}
 
-	fmt.Print(allowlistSuggestionText(report))
+	fmt.Print(allowlistSuggestionText(report, expiry))
 	return nil
 }
 
@@ -463,7 +468,7 @@ func normalizeScanArgs(args []string) []string {
 				index++
 				flagArgs = append(flagArgs, args[index])
 			}
-		case "-allowlist", "-min-severity", "-only-rules", "-provider", "-max-file-bytes", "-max-findings":
+		case "-allowlist", "-min-severity", "-only-rules", "-provider", "-max-file-bytes", "-max-findings", "-expires-on":
 			flagArgs = append(flagArgs, arg)
 			if index+1 < len(args) {
 				index++
@@ -785,13 +790,38 @@ func printMarkdownReport(report scanner.Report) {
 	fmt.Print(markdownReportText(report))
 }
 
-func allowlistSuggestionText(report scanner.Report) string {
+func parseCandidateExpiry(value string, now time.Time) (string, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", nil
+	}
+
+	expiresAt, err := time.Parse(time.DateOnly, value)
+	if err != nil {
+		return "", errors.New("expires-on must be a YYYY-MM-DD date")
+	}
+	now = now.UTC()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	if expiresAt.Before(today) {
+		return "", errors.New("expires-on cannot be in the past")
+	}
+	return expiresAt.Format(time.DateOnly), nil
+}
+
+func allowlistSuggestionText(report scanner.Report, expiresOn string) string {
 	lines := []string{
 		"# Review every entry before adding it to an allowlist.",
 		"# Format: rule-id path-glob [line] [expires-on:YYYY-MM-DD]",
 	}
+	if expiresOn != "" {
+		lines = append(lines, fmt.Sprintf("# Suggested entries expire on %s.", expiresOn))
+	}
 	for _, finding := range report.Findings {
-		lines = append(lines, fmt.Sprintf("%s %s %d", finding.RuleID, finding.Path, finding.Line))
+		line := fmt.Sprintf("%s %s %d", finding.RuleID, finding.Path, finding.Line)
+		if expiresOn != "" {
+			line += " " + expiresOn
+		}
+		lines = append(lines, line)
 	}
 	if len(report.Findings) == 0 {
 		lines = append(lines, "# No findings to suggest.")

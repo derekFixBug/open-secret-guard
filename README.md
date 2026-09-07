@@ -127,6 +127,12 @@ Generate reviewed allowlist candidates from current findings. This command never
 open-secret-guard allowlist-suggest . -min-severity high > .open-secret-guard.allowlist.candidates
 ```
 
+For a temporary reviewed exception, append the same inclusive expiry date to every generated candidate. Dates in the past are rejected:
+
+```sh
+open-secret-guard allowlist-suggest . -min-severity high -expires-on 2026-12-31 > .open-secret-guard.allowlist.candidates
+```
+
 Focus a scan or candidate review on selected providers. Multiple providers are comma-separated:
 
 ```sh
