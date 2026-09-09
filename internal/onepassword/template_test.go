@@ -38,6 +38,27 @@ func TestGenerateLeavesInvalidEnvironmentAssignmentsUntouched(t *testing.T) {
 	}
 }
 
+func TestGenerateWithOptionsPreservesExistingReferencesOnlyWhenRequested(t *testing.T) {
+	input := stringsJoin(
+		"API_KEY=op://Personal/legacy-item/API_KEY # keep this reference",
+		"DATABASE_URL=postgres://demo:password@localhost/app",
+	)
+
+	got := GenerateWithOptions(input, "Open Source", "open-secret-guard", Options{PreserveExistingReferences: true})
+	want := stringsJoin(
+		"API_KEY=op://Personal/legacy-item/API_KEY # keep this reference",
+		"DATABASE_URL=op://Open%20Source/open-secret-guard/DATABASE_URL",
+	)
+	if got != want {
+		t.Fatalf("unexpected preserved template:\nwant:\n%s\n\ngot:\n%s", want, got)
+	}
+
+	withoutOption := Generate(input, "Open Source", "open-secret-guard")
+	if strings.Contains(withoutOption, "op://Personal/legacy-item/API_KEY") {
+		t.Fatalf("default template should replace existing references:\n%s", withoutOption)
+	}
+}
+
 func stringsJoin(lines ...string) string {
 	result := ""
 	for index, line := range lines {

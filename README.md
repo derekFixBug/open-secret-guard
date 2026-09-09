@@ -195,6 +195,12 @@ open-secret-guard 1password-template .env.example -vault 'Open Source' -item 'op
 op run --env-file=.env.1password -- your-command
 ```
 
+When migrating a template that already has selected `op://` references, keep those references while generating missing fields for the supplied vault and item:
+
+```sh
+open-secret-guard 1password-template .env.example -vault 'Open Source' -item 'open-secret-guard' -preserve-references
+```
+
 Generate a local pre-commit hook:
 
 ```sh

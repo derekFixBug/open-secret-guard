@@ -49,8 +49,8 @@ func TestNormalizeEnvExampleArgsAllowsOutputAfterPath(t *testing.T) {
 }
 
 func TestNormalize1PasswordTemplateArgsAllowsFlagsAfterPath(t *testing.T) {
-	args := normalize1PasswordTemplateArgs([]string{".env.example", "-vault", "Open Source", "-item", "open-secret-guard", "-output", ".env.1password"})
-	want := []string{"-vault", "Open Source", "-item", "open-secret-guard", "-output", ".env.1password", ".env.example"}
+	args := normalize1PasswordTemplateArgs([]string{".env.example", "-vault", "Open Source", "-item", "open-secret-guard", "-output", ".env.1password", "-preserve-references"})
+	want := []string{"-vault", "Open Source", "-item", "open-secret-guard", "-output", ".env.1password", "-preserve-references", ".env.example"}
 	if len(args) != len(want) {
 		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
 	}

@@ -8,10 +8,19 @@ import (
 
 // Generate creates an op run-compatible environment template without copying source values.
 func Generate(content string, vault string, item string) string {
+	return GenerateWithOptions(content, vault, item, Options{})
+}
+
+type Options struct {
+	PreserveExistingReferences bool
+}
+
+// GenerateWithOptions creates an op run-compatible environment template without copying source values.
+func GenerateWithOptions(content string, vault string, item string, options Options) string {
 	var builder strings.Builder
 	scanner := bufio.NewScanner(strings.NewReader(content))
 	for scanner.Scan() {
-		builder.WriteString(templateLine(scanner.Text(), vault, item))
+		builder.WriteString(templateLine(scanner.Text(), vault, item, options))
 		builder.WriteByte('\n')
 	}
 
@@ -21,7 +30,7 @@ func Generate(content string, vault string, item string) string {
 	return builder.String()
 }
 
-func templateLine(line string, vault string, item string) string {
+func templateLine(line string, vault string, item string, options Options) string {
 	trimmed := strings.TrimSpace(line)
 	if trimmed == "" || strings.HasPrefix(trimmed, "#") {
 		return line
@@ -38,7 +47,14 @@ func templateLine(line string, vault string, item string) string {
 		return line
 	}
 
-	_, comment := splitValueComment(assignment[separator+1:])
+	value, comment := splitValueComment(assignment[separator+1:])
+	if options.PreserveExistingReferences && strings.HasPrefix(value, "op://") {
+		result := prefix + key + "=" + value
+		if comment != "" {
+			return result + " " + comment
+		}
+		return result
+	}
 	result := prefix + key + "=op://" + url.PathEscape(vault) + "/" + url.PathEscape(item) + "/" + url.PathEscape(key)
 	if comment != "" {
 		return result + " " + comment

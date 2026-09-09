@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `1password-template -preserve-references` for migrations that retain existing `op://` environment references.
 - Added `allowlist-suggest -expires-on` to generate temporary review exceptions with a shared expiry date.
 - Added `allowlist-check -expires-within` so CI can flag active review exceptions before they expire.
 - Added optional expiry dates for allowlist entries so stale review exceptions stop suppressing findings.
