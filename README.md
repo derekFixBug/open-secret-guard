@@ -77,6 +77,12 @@ Exclude demo or fixture paths:
 open-secret-guard scan . -exclude examples,testdata
 ```
 
+Exclude generated credential files everywhere by filename pattern:
+
+```sh
+open-secret-guard scan . -exclude '*.env,*.pem'
+```
+
 Increase the maximum file size for generated or minified configuration files. The default is 2 MiB:
 
 ```sh

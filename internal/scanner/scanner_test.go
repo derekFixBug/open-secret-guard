@@ -163,6 +163,40 @@ func TestScanExcludesPaths(t *testing.T) {
 	}
 }
 
+func TestScanExcludesFileNameGlob(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "demo.env"), []byte(assignedTokenFixture()), 0o600); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "keep.txt"), []byte("safe=true\n"), 0o600); err != nil {
+		t.Fatalf("write safe file: %v", err)
+	}
+
+	report, err := Scan(Options{Paths: []string{dir}, Exclude: []string{"*.env"}})
+	if err != nil {
+		t.Fatalf("scan: %v", err)
+	}
+	if len(report.Findings) != 0 || report.SkippedFiles != 1 {
+		t.Fatalf("expected one excluded file and no findings, got %#v", report)
+	}
+}
+
+func TestScanExcludesExplicitFilePath(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "demo.env")
+	if err := os.WriteFile(target, []byte(assignedTokenFixture()), 0o600); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	report, err := Scan(Options{Paths: []string{target}, Exclude: []string{"*.env"}})
+	if err != nil {
+		t.Fatalf("scan: %v", err)
+	}
+	if len(report.Findings) != 0 || report.SkippedFiles != 1 {
+		t.Fatalf("expected explicit file to be excluded, got %#v", report)
+	}
+}
+
 func TestScanSkipsHiddenDirectoriesByDefault(t *testing.T) {
 	dir := t.TempDir()
 	hiddenDir := filepath.Join(dir, ".cache")

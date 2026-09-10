@@ -288,6 +288,10 @@ func scanPath(path string, options Options, report *Report) error {
 	}
 
 	if !info.IsDir() {
+		if isExcluded(path, options.Exclude) {
+			report.SkippedFiles++
+			return nil
+		}
 		return scanFile(path, report, options.MaxFileBytes)
 	}
 
@@ -341,6 +345,12 @@ func isExcluded(path string, patterns []string) bool {
 		matched, err := filepath.Match(cleanPattern, cleanPath)
 		if err == nil && matched {
 			return true
+		}
+		if !strings.Contains(cleanPattern, "/") {
+			matched, err = filepath.Match(cleanPattern, filepath.Base(cleanPath))
+			if err == nil && matched {
+				return true
+			}
 		}
 	}
 	return false
