@@ -127,6 +127,12 @@ Fail a CI check before temporary allowlist exceptions expire. The window include
 open-secret-guard allowlist-check .open-secret-guard.allowlist -expires-within 30
 ```
 
+Return the allowlist entry count and expiring entries as JSON for CI scripts. The command still exits non-zero when the requested expiry window contains entries:
+
+```sh
+open-secret-guard allowlist-check .open-secret-guard.allowlist -format json -expires-within 30
+```
+
 Generate reviewed allowlist candidates from current findings. This command never changes a file and never prints matched values:
 
 ```sh

@@ -61,10 +61,14 @@ func runAllowlistCheck(args []string) error {
 	flags := flag.NewFlagSet("allowlist-check", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 
+	format := flags.String("format", "text", "output format: text or json")
 	expiresWithin := flags.Int("expires-within", -1, "fail when an allowlist entry expires within this many days")
 	normalizedArgs := normalizeAllowlistCheckArgs(args)
 	if err := flags.Parse(normalizedArgs); err != nil {
 		return err
+	}
+	if *format != "text" && *format != "json" {
+		return fmt.Errorf("unsupported format %q", *format)
 	}
 	if *expiresWithin < -1 {
 		return errors.New("expires-within cannot be less than -1")
@@ -82,12 +86,41 @@ func runAllowlistCheck(args []string) error {
 	if err := allowlist.Validate(entries, scanner.Rules()); err != nil {
 		return err
 	}
-	if expiring := allowlist.ExpiringWithin(entries, time.Now().UTC(), *expiresWithin); len(expiring) > 0 {
+	expiring := allowlist.ExpiringWithin(entries, time.Now().UTC(), *expiresWithin)
+	switch *format {
+	case "text":
+		fmt.Printf("Allowlist is valid: %d entr%s.\n", len(entries), pluralSuffix(len(entries)))
+	case "json":
+		output, err := allowlistCheckReportJSON(entries, expiring)
+		if err != nil {
+			return err
+		}
+		fmt.Print(output)
+	}
+	if len(expiring) > 0 {
 		return fmt.Errorf("%d allowlist entr%s expire within %d day(s): %s", len(expiring), pluralSuffix(len(expiring)), *expiresWithin, formatExpiringAllowlistEntries(expiring))
 	}
 
-	fmt.Printf("Allowlist is valid: %d entr%s.\n", len(entries), pluralSuffix(len(entries)))
 	return nil
+}
+
+type allowlistCheckReport struct {
+	Entries  int               `json:"entries"`
+	Expiring []allowlist.Entry `json:"expiring"`
+}
+
+func allowlistCheckReportJSON(entries []allowlist.Entry, expiring []allowlist.Entry) (string, error) {
+	if expiring == nil {
+		expiring = []allowlist.Entry{}
+	}
+	output, err := json.MarshalIndent(allowlistCheckReport{
+		Entries:  len(entries),
+		Expiring: expiring,
+	}, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(output) + "\n", nil
 }
 
 func runAllowlistSuggest(args []string) error {
@@ -492,7 +525,7 @@ func normalizeAllowlistCheckArgs(args []string) []string {
 	for index := 0; index < len(args); index++ {
 		arg := args[index]
 		switch arg {
-		case "-expires-within":
+		case "-format", "-expires-within":
 			flagArgs = append(flagArgs, arg)
 			if index+1 < len(args) {
 				index++
@@ -924,7 +957,7 @@ func printUsage() {
 	fmt.Println(`open-secret-guard
 
 Usage:
-  open-secret-guard allowlist-check <allowlist-file> [-expires-within days]
+  open-secret-guard allowlist-check <allowlist-file> [-format text|json] [-expires-within days]
   open-secret-guard allowlist-suggest [path ...] [flags]
   open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard 1password-template <env-example-file> -vault <vault> -item <item> [-output .env.1password] [-preserve-references]

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/derekFixBug/open-secret-guard/internal/allowlist"
 	"github.com/derekFixBug/open-secret-guard/internal/scanner"
 )
 
@@ -128,8 +130,8 @@ func TestRunAllowlistCheckRequiresOnePath(t *testing.T) {
 }
 
 func TestNormalizeAllowlistCheckArgsAllowsFlagAfterPath(t *testing.T) {
-	args := normalizeAllowlistCheckArgs([]string{".open-secret-guard.allowlist", "-expires-within", "30"})
-	want := []string{"-expires-within", "30", ".open-secret-guard.allowlist"}
+	args := normalizeAllowlistCheckArgs([]string{".open-secret-guard.allowlist", "-expires-within", "30", "-format", "json"})
+	want := []string{"-expires-within", "30", "-format", "json", ".open-secret-guard.allowlist"}
 	if len(args) != len(want) {
 		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
 	}
@@ -143,6 +145,35 @@ func TestNormalizeAllowlistCheckArgsAllowsFlagAfterPath(t *testing.T) {
 func TestRunAllowlistCheckRejectsInvalidExpiryWindow(t *testing.T) {
 	if err := runAllowlistCheck([]string{"-expires-within", "-2", ".open-secret-guard.allowlist"}); err == nil {
 		t.Fatal("expected invalid expiry window to fail")
+	}
+}
+
+func TestRunAllowlistCheckRejectsUnsupportedFormat(t *testing.T) {
+	if err := runAllowlistCheck([]string{"-format", "yaml", ".open-secret-guard.allowlist"}); err == nil {
+		t.Fatal("expected unsupported format to fail")
+	}
+}
+
+func TestAllowlistCheckReportJSONIncludesOnlyReviewableFields(t *testing.T) {
+	expiresAt := time.Date(2026, time.December, 31, 0, 0, 0, 0, time.UTC)
+	entry := allowlist.Entry{RuleID: "github-token", PathPattern: "config/example.env", Line: 4, ExpiresAt: expiresAt}
+	output, err := allowlistCheckReportJSON(
+		[]allowlist.Entry{entry},
+		[]allowlist.Entry{entry},
+	)
+	if err != nil {
+		t.Fatalf("build JSON report: %v", err)
+	}
+
+	var report allowlistCheckReport
+	if err := json.Unmarshal([]byte(output), &report); err != nil {
+		t.Fatalf("decode JSON report: %v\n%s", err, output)
+	}
+	if report.Entries != 1 || len(report.Expiring) != 1 || report.Expiring[0].PathPattern != "config/example.env" {
+		t.Fatalf("unexpected JSON report: %#v", report)
+	}
+	if strings.Contains(output, "RedactedMatch") || strings.Contains(output, "super-secret") {
+		t.Fatalf("JSON report must not contain secret values: %s", output)
 	}
 }
 
