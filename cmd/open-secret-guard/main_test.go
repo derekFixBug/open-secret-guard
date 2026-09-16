@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -306,6 +307,36 @@ func TestMarkdownReportIncludesRuleMetadataWithoutMatches(t *testing.T) {
 func TestMarkdownReportExplainsNoFindings(t *testing.T) {
 	if got := markdownReportText(scanner.Report{}); got != "No likely secrets found.\n" {
 		t.Fatalf("unexpected no-findings report %q", got)
+	}
+}
+
+func TestCSVReportIncludesMetadataWithoutMatches(t *testing.T) {
+	report := scanner.Report{Findings: []scanner.Finding{{
+		RuleID:        "github-token",
+		Severity:      "high",
+		Path:          "config,example.env",
+		Line:          4,
+		Column:        7,
+		Message:       "GitHub tokens should be stored in a secret manager, not source files.",
+		RedactedMatch: "never-print-this",
+	}}}
+
+	output, err := csvReportText(report)
+	if err != nil {
+		t.Fatalf("create CSV report: %v", err)
+	}
+	rows, err := csv.NewReader(strings.NewReader(output)).ReadAll()
+	if err != nil {
+		t.Fatalf("read CSV report: %v\n%s", err, output)
+	}
+	if len(rows) != 2 || strings.Join(rows[0], ",") != "path,line,column,rule,provider,severity,description" {
+		t.Fatalf("unexpected CSV rows: %#v", rows)
+	}
+	if strings.Join(rows[1], "|") != "config,example.env|4|7|github-token|github|high|GitHub tokens should be stored in a secret manager, not source files." {
+		t.Fatalf("unexpected CSV finding: %#v", rows[1])
+	}
+	if strings.Contains(output, "never-print-this") {
+		t.Fatalf("CSV report must not include matched values: %s", output)
 	}
 }
 

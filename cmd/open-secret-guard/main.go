@@ -1,12 +1,14 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -397,7 +399,7 @@ func runScan(args []string) error {
 	flags := flag.NewFlagSet("scan", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 
-	format := flags.String("format", "text", "output format: text, json, sarif, summary, or markdown")
+	format := flags.String("format", "text", "output format: text, json, sarif, summary, markdown, or csv")
 	failOnFindings := flags.Bool("fail-on-findings", false, "exit with a non-zero status when findings are detected")
 	includeHidden := flags.Bool("include-hidden", false, "scan hidden files and directories")
 	exclude := flags.String("exclude", "", "comma-separated file or directory patterns to skip")
@@ -472,6 +474,10 @@ func runScan(args []string) error {
 		printSummaryReport(report)
 	case "markdown":
 		printMarkdownReport(report)
+	case "csv":
+		if err := printCSVReport(report); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unsupported format %q", *format)
 	}
@@ -828,6 +834,15 @@ func printMarkdownReport(report scanner.Report) {
 	fmt.Print(markdownReportText(report))
 }
 
+func printCSVReport(report scanner.Report) error {
+	output, err := csvReportText(report)
+	if err != nil {
+		return err
+	}
+	fmt.Print(output)
+	return nil
+}
+
 func parseCandidateExpiry(value string, now time.Time) (string, error) {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -931,6 +946,37 @@ func markdownReportText(report scanner.Report) string {
 		))
 	}
 	return strings.Join(lines, "\n") + "\n"
+}
+
+func csvReportText(report scanner.Report) (string, error) {
+	providers := make(map[string]string, len(scanner.Rules()))
+	for _, rule := range scanner.Rules() {
+		providers[rule.ID] = rule.Provider
+	}
+
+	var builder strings.Builder
+	writer := csv.NewWriter(&builder)
+	if err := writer.Write([]string{"path", "line", "column", "rule", "provider", "severity", "description"}); err != nil {
+		return "", err
+	}
+	for _, finding := range report.Findings {
+		if err := writer.Write([]string{
+			finding.Path,
+			strconv.Itoa(finding.Line),
+			strconv.Itoa(finding.Column),
+			finding.RuleID,
+			providers[finding.RuleID],
+			finding.Severity,
+			finding.Message,
+		}); err != nil {
+			return "", err
+		}
+	}
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
 }
 
 func markdownCell(value string) string {

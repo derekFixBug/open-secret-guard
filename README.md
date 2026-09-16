@@ -194,6 +194,12 @@ Create a Markdown findings table for a pull request or issue. It includes paths,
 open-secret-guard scan . -format markdown
 ```
 
+Export findings as CSV for a spreadsheet or a CI artifact. The export includes metadata only and never matched values:
+
+```sh
+open-secret-guard scan . -format csv > open-secret-guard-findings.csv
+```
+
 Generate a safe `.env.example` from a local `.env` file:
 
 ```sh
