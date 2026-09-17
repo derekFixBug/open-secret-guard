@@ -53,6 +53,12 @@ Fail CI when findings are detected:
 open-secret-guard scan . -fail-on-findings
 ```
 
+Keep every finding in the report but only fail CI for high- or critical-severity findings:
+
+```sh
+open-secret-guard scan . -fail-on-severity high
+```
+
 Only report high and critical findings:
 
 ```sh

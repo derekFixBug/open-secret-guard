@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `scan -fail-on-severity` so CI can report all findings while failing only at a selected severity threshold.
 - Added `scan -format csv` for metadata-only findings exports to spreadsheets and CI artifacts.
 - Added `allowlist-check -format json` for machine-readable CI validation results and expiring exception details.
 - Added filename glob support to `-exclude`, including explicitly scanned files such as `scan config/local.env -exclude '*.env'`.

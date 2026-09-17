@@ -12,9 +12,9 @@ import (
 )
 
 func TestNormalizeScanArgsAllowsFlagsAfterPaths(t *testing.T) {
-	args := normalizeScanArgs([]string{"examples", "-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-max-findings", "20", "-expires-on", "2026-12-31", "-include-hidden"})
+	args := normalizeScanArgs([]string{"examples", "-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-fail-on-severity", "critical", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-max-findings", "20", "-expires-on", "2026-12-31", "-include-hidden"})
 
-	want := []string{"-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-max-findings", "20", "-expires-on", "2026-12-31", "-include-hidden", "examples"}
+	want := []string{"-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-fail-on-severity", "critical", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-max-findings", "20", "-expires-on", "2026-12-31", "-include-hidden", "examples"}
 	if len(args) != len(want) {
 		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
 	}
@@ -413,6 +413,25 @@ func TestFilterReportBySeverityKeepsFindingsAtOrAboveThreshold(t *testing.T) {
 func TestFilterReportBySeverityRejectsUnsupportedLevel(t *testing.T) {
 	if _, err := filterReportBySeverity(scanner.Report{}, "urgent"); err == nil {
 		t.Fatal("expected unsupported severity to fail")
+	}
+}
+
+func TestHasFindingsAtOrAboveUsesFailureThreshold(t *testing.T) {
+	report := scanner.Report{Findings: []scanner.Finding{
+		{RuleID: "assigned-secret", Severity: "medium"},
+		{RuleID: "github-token", Severity: "high"},
+	}}
+	if !hasFindingsAtOrAbove(report, "high") {
+		t.Fatal("expected high finding to meet high threshold")
+	}
+	if hasFindingsAtOrAbove(report, "critical") {
+		t.Fatal("did not expect findings to meet critical threshold")
+	}
+}
+
+func TestRunScanRejectsUnsupportedFailureSeverity(t *testing.T) {
+	if err := runScan([]string{"-fail-on-severity", "urgent"}); err == nil {
+		t.Fatal("expected unsupported failure severity to fail")
 	}
 }
 

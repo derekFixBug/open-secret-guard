@@ -401,6 +401,7 @@ func runScan(args []string) error {
 
 	format := flags.String("format", "text", "output format: text, json, sarif, summary, markdown, or csv")
 	failOnFindings := flags.Bool("fail-on-findings", false, "exit with a non-zero status when findings are detected")
+	failOnSeverity := flags.String("fail-on-severity", "", "minimum severity that exits non-zero: low, medium, high, or critical")
 	includeHidden := flags.Bool("include-hidden", false, "scan hidden files and directories")
 	exclude := flags.String("exclude", "", "comma-separated file or directory patterns to skip")
 	allowlistPath := flags.String("allowlist", "", "path to an allowlist file")
@@ -416,6 +417,11 @@ func runScan(args []string) error {
 	}
 	if *maxFindings < 0 {
 		return errors.New("max-findings cannot be negative")
+	}
+	if *failOnSeverity != "" {
+		if _, ok := severityRank(*failOnSeverity); !ok {
+			return fmt.Errorf("unsupported failure severity %q", *failOnSeverity)
+		}
 	}
 
 	paths := flags.Args()
@@ -450,6 +456,7 @@ func runScan(args []string) error {
 	if err != nil {
 		return err
 	}
+	failureReport := report
 	report, err = limitReportFindings(report, *maxFindings)
 	if err != nil {
 		return err
@@ -485,6 +492,9 @@ func runScan(args []string) error {
 	if *failOnFindings && len(report.Findings) > 0 {
 		return errors.New("findings detected")
 	}
+	if *failOnSeverity != "" && hasFindingsAtOrAbove(failureReport, *failOnSeverity) {
+		return fmt.Errorf("findings at or above %s severity detected", *failOnSeverity)
+	}
 
 	return nil
 }
@@ -510,7 +520,7 @@ func normalizeScanArgs(args []string) []string {
 				index++
 				flagArgs = append(flagArgs, args[index])
 			}
-		case "-allowlist", "-min-severity", "-only-rules", "-provider", "-max-file-bytes", "-max-findings", "-expires-on":
+		case "-allowlist", "-min-severity", "-fail-on-severity", "-only-rules", "-provider", "-max-file-bytes", "-max-findings", "-expires-on":
 			flagArgs = append(flagArgs, arg)
 			if index+1 < len(args) {
 				index++
@@ -663,6 +673,20 @@ func filterReportBySeverity(report scanner.Report, minSeverity string) (scanner.
 	}
 	report.Findings = filtered
 	return report, nil
+}
+
+func hasFindingsAtOrAbove(report scanner.Report, minSeverity string) bool {
+	minimumRank, ok := severityRank(minSeverity)
+	if !ok {
+		return false
+	}
+	for _, finding := range report.Findings {
+		rank, ok := severityRank(finding.Severity)
+		if ok && rank >= minimumRank {
+			return true
+		}
+	}
+	return false
 }
 
 func filterReportByRules(report scanner.Report, onlyRules string) (scanner.Report, error) {
@@ -1015,6 +1039,7 @@ Usage:
 Flags:
   -format text|json|sarif|summary|markdown Output format
   -fail-on-findings       Exit non-zero when findings are detected
+  -fail-on-severity level Exit non-zero for findings at or above low|medium|high|critical
   -min-severity level     Only report findings at or above low|medium|high|critical
   -only-rules ids         Only report findings for the given comma-separated rule IDs
   -provider names         Only report findings for the given comma-separated providers
