@@ -189,7 +189,7 @@ func runRules(args []string) error {
 	flags := flag.NewFlagSet("rules", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 
-	format := flags.String("format", "text", "output format: text, json, or markdown")
+	format := flags.String("format", "text", "output format: text, json, markdown, or csv")
 	minSeverity := flags.String("min-severity", "", "minimum severity to list: low, medium, high, or critical")
 	provider := flags.String("provider", "", "comma-separated providers to list")
 	if err := flags.Parse(args); err != nil {
@@ -220,6 +220,10 @@ func runRules(args []string) error {
 		return encoder.Encode(rules)
 	case "markdown":
 		printMarkdownRules(rules)
+	case "csv":
+		if err := printCSVRules(rules); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unsupported format %q", *format)
 	}
@@ -850,6 +854,15 @@ func printMarkdownRules(rules []scanner.RuleMetadata) {
 	}
 }
 
+func printCSVRules(rules []scanner.RuleMetadata) error {
+	output, err := csvRulesText(rules)
+	if err != nil {
+		return err
+	}
+	fmt.Print(output)
+	return nil
+}
+
 func printSummaryReport(report scanner.Report) {
 	fmt.Print(summaryText(report))
 }
@@ -1003,6 +1016,24 @@ func csvReportText(report scanner.Report) (string, error) {
 	return builder.String(), nil
 }
 
+func csvRulesText(rules []scanner.RuleMetadata) (string, error) {
+	var builder strings.Builder
+	writer := csv.NewWriter(&builder)
+	if err := writer.Write([]string{"rule", "provider", "severity", "description"}); err != nil {
+		return "", err
+	}
+	for _, rule := range rules {
+		if err := writer.Write([]string{rule.ID, rule.Provider, rule.Severity, rule.Message}); err != nil {
+			return "", err
+		}
+	}
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
+}
+
 func markdownCell(value string) string {
 	value = strings.ReplaceAll(value, "|", "\\|")
 	return strings.ReplaceAll(value, "\n", " ")
@@ -1033,7 +1064,7 @@ Usage:
   open-secret-guard 1password-template <env-example-file> -vault <vault> -item <item> [-output .env.1password] [-preserve-references]
   open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-provider github,gitlab] [-branches main,develop] [-schedule '0 9 * * 1'] [-manual-trigger] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-exclude examples,testdata] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608] [-max-findings 20]
   open-secret-guard install-hook [-output .git/hooks/pre-commit] [-min-severity high]
-  open-secret-guard rules [-format text|json|markdown] [-min-severity low|medium|high|critical] [-provider github,gitlab]
+  open-secret-guard rules [-format text|json|markdown|csv] [-min-severity low|medium|high|critical] [-provider github,gitlab]
   open-secret-guard scan [path ...] [flags]
 
 Flags:

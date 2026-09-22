@@ -340,6 +340,28 @@ func TestCSVReportIncludesMetadataWithoutMatches(t *testing.T) {
 	}
 }
 
+func TestCSVRulesIncludesSelectedMetadata(t *testing.T) {
+	output, err := csvRulesText([]scanner.RuleMetadata{{
+		ID:       "github-token",
+		Provider: "github",
+		Severity: "high",
+		Message:  "GitHub tokens should be stored in a secret manager, not source files.",
+	}})
+	if err != nil {
+		t.Fatalf("create CSV rules: %v", err)
+	}
+	rows, err := csv.NewReader(strings.NewReader(output)).ReadAll()
+	if err != nil {
+		t.Fatalf("read CSV rules: %v\n%s", err, output)
+	}
+	if len(rows) != 2 || strings.Join(rows[0], ",") != "rule,provider,severity,description" {
+		t.Fatalf("unexpected CSV rules: %#v", rows)
+	}
+	if strings.Join(rows[1], "|") != "github-token|github|high|GitHub tokens should be stored in a secret manager, not source files." {
+		t.Fatalf("unexpected CSV rule: %#v", rows[1])
+	}
+}
+
 func TestFilterRulesBySeverityKeepsRulesAtOrAboveThreshold(t *testing.T) {
 	rules := []scanner.RuleMetadata{
 		{ID: "assigned-secret", Severity: "medium"},

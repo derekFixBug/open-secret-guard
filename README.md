@@ -188,6 +188,12 @@ Print the rules as a Markdown table for project documentation:
 open-secret-guard rules -format markdown
 ```
 
+Export rule metadata as CSV for a spreadsheet or audit inventory:
+
+```sh
+open-secret-guard rules -format csv > open-secret-guard-rules.csv
+```
+
 Print a CI-friendly scan summary without paths or matched values:
 
 ```sh
