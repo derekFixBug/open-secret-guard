@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -131,6 +132,7 @@ func runAllowlistSuggest(args []string) error {
 
 	includeHidden := flags.Bool("include-hidden", false, "scan hidden files and directories")
 	exclude := flags.String("exclude", "", "comma-separated file or directory patterns to skip")
+	excludeFile := flags.String("exclude-file", "", "path to newline-separated file or directory patterns to skip")
 	minSeverity := flags.String("min-severity", "", "minimum severity to include: low, medium, high, or critical")
 	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs to include")
 	provider := flags.String("provider", "", "comma-separated providers to include")
@@ -149,6 +151,10 @@ func runAllowlistSuggest(args []string) error {
 	if err != nil {
 		return err
 	}
+	excludePatterns, err := loadExcludePatterns(*excludeFile)
+	if err != nil {
+		return err
+	}
 
 	paths := flags.Args()
 	if len(paths) == 0 {
@@ -158,7 +164,7 @@ func runAllowlistSuggest(args []string) error {
 	report, err := scanner.Scan(scanner.Options{
 		Paths:         paths,
 		IncludeHidden: *includeHidden,
-		Exclude:       splitCSV(*exclude),
+		Exclude:       append(splitCSV(*exclude), excludePatterns...),
 		MaxFileBytes:  *maxFileBytes,
 	})
 	if err != nil {
@@ -408,6 +414,7 @@ func runScan(args []string) error {
 	failOnSeverity := flags.String("fail-on-severity", "", "minimum severity that exits non-zero: low, medium, high, or critical")
 	includeHidden := flags.Bool("include-hidden", false, "scan hidden files and directories")
 	exclude := flags.String("exclude", "", "comma-separated file or directory patterns to skip")
+	excludeFile := flags.String("exclude-file", "", "path to newline-separated file or directory patterns to skip")
 	allowlistPath := flags.String("allowlist", "", "path to an allowlist file")
 	minSeverity := flags.String("min-severity", "", "minimum severity to report: low, medium, high, or critical")
 	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs to include in the report")
@@ -427,6 +434,10 @@ func runScan(args []string) error {
 			return fmt.Errorf("unsupported failure severity %q", *failOnSeverity)
 		}
 	}
+	excludePatterns, err := loadExcludePatterns(*excludeFile)
+	if err != nil {
+		return err
+	}
 
 	paths := flags.Args()
 	if len(paths) == 0 {
@@ -441,7 +452,7 @@ func runScan(args []string) error {
 	report, err := scanner.Scan(scanner.Options{
 		Paths:         paths,
 		IncludeHidden: *includeHidden,
-		Exclude:       splitCSV(*exclude),
+		Exclude:       append(splitCSV(*exclude), excludePatterns...),
 		Allowlist:     allowlistMatcher,
 		MaxFileBytes:  *maxFileBytes,
 	})
@@ -518,7 +529,7 @@ func normalizeScanArgs(args []string) []string {
 			}
 		case "-fail-on-findings", "-include-hidden":
 			flagArgs = append(flagArgs, arg)
-		case "-exclude":
+		case "-exclude", "-exclude-file":
 			flagArgs = append(flagArgs, arg)
 			if index+1 < len(args) {
 				index++
@@ -656,6 +667,32 @@ func splitCSV(value string) []string {
 		}
 	}
 	return values
+}
+
+func loadExcludePatterns(path string) ([]string, error) {
+	if path == "" {
+		return nil, nil
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var patterns []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		pattern := strings.TrimSpace(scanner.Text())
+		if pattern == "" || strings.HasPrefix(pattern, "#") {
+			continue
+		}
+		patterns = append(patterns, pattern)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return patterns, nil
 }
 
 func filterReportBySeverity(report scanner.Report, minSeverity string) (scanner.Report, error) {

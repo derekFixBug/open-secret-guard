@@ -89,6 +89,18 @@ Exclude generated credential files everywhere by filename pattern:
 open-secret-guard scan . -exclude '*.env,*.pem'
 ```
 
+Keep shared exclusions in a text file; blank lines and lines beginning with `#` are ignored:
+
+```text
+# .open-secret-guard.exclude
+examples
+*.generated.env
+```
+
+```sh
+open-secret-guard scan . -exclude-file .open-secret-guard.exclude
+```
+
 Increase the maximum file size for generated or minified configuration files. The default is 2 MiB:
 
 ```sh

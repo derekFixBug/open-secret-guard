@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/csv"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -12,9 +14,9 @@ import (
 )
 
 func TestNormalizeScanArgsAllowsFlagsAfterPaths(t *testing.T) {
-	args := normalizeScanArgs([]string{"examples", "-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-fail-on-severity", "critical", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-max-findings", "20", "-expires-on", "2026-12-31", "-include-hidden"})
+	args := normalizeScanArgs([]string{"examples", "-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-fail-on-severity", "critical", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-max-findings", "20", "-expires-on", "2026-12-31", "-exclude-file", ".open-secret-guard.exclude", "-include-hidden"})
 
-	want := []string{"-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-fail-on-severity", "critical", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-max-findings", "20", "-expires-on", "2026-12-31", "-include-hidden", "examples"}
+	want := []string{"-format", "sarif", "-allowlist", ".open-secret-guard.allowlist", "-min-severity", "high", "-fail-on-severity", "critical", "-only-rules", "github-token,private-key", "-provider", "github,generic", "-max-file-bytes", "3145728", "-max-findings", "20", "-expires-on", "2026-12-31", "-exclude-file", ".open-secret-guard.exclude", "-include-hidden", "examples"}
 	if len(args) != len(want) {
 		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
 	}
@@ -33,6 +35,29 @@ func TestLoadAllowlistReturnsNilInterfaceWhenUnset(t *testing.T) {
 	}
 	if matcher != nil {
 		t.Fatalf("expected nil matcher, got %#v", matcher)
+	}
+}
+
+func TestLoadExcludePatternsSkipsCommentsAndEmptyLines(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "exclude.txt")
+	content := "# generated files\n\n*.env\n fixtures \n"
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("write exclude patterns: %v", err)
+	}
+
+	patterns, err := loadExcludePatterns(path)
+	if err != nil {
+		t.Fatalf("load exclude patterns: %v", err)
+	}
+	if strings.Join(patterns, ",") != "*.env,fixtures" {
+		t.Fatalf("unexpected patterns: %#v", patterns)
+	}
+}
+
+func TestLoadExcludePatternsReturnsNilWhenUnset(t *testing.T) {
+	patterns, err := loadExcludePatterns("")
+	if err != nil || patterns != nil {
+		t.Fatalf("expected no patterns, got %#v, %v", patterns, err)
 	}
 }
 
