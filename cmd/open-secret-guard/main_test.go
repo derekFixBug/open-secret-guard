@@ -149,6 +149,12 @@ func TestRunGitHubActionRejectsNegativeMaximumFindings(t *testing.T) {
 	}
 }
 
+func TestRunGitHubActionRejectsUnsupportedFailureSeverity(t *testing.T) {
+	if err := runGitHubAction([]string{"-fail-on-severity", "urgent"}); err == nil {
+		t.Fatal("expected unsupported failure severity to fail")
+	}
+}
+
 func TestRunAllowlistCheckRequiresOnePath(t *testing.T) {
 	if err := runAllowlistCheck(nil); err == nil {
 		t.Fatal("expected allowlist-check to require a path")

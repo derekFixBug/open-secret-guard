@@ -243,6 +243,7 @@ func runGitHubAction(args []string) error {
 	outputPath := flags.String("output", "", "path to write the generated workflow")
 	allowlistPath := flags.String("allowlist", "", "allowlist path used by the scan step")
 	minSeverity := flags.String("min-severity", "", "minimum severity used by the scan step")
+	failOnSeverity := flags.String("fail-on-severity", "", "minimum severity that fails the generated scan: low, medium, high, or critical")
 	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs used by the scan step")
 	provider := flags.String("provider", "", "comma-separated providers used by the scan step")
 	goVersion := flags.String("go-version", "1.22", "Go version used by the workflow")
@@ -268,22 +269,28 @@ func runGitHubAction(args []string) error {
 	if *maxFindings < 0 {
 		return errors.New("max-findings cannot be negative")
 	}
+	if *failOnSeverity != "" {
+		if _, ok := severityRank(*failOnSeverity); !ok {
+			return fmt.Errorf("unsupported failure severity %q", *failOnSeverity)
+		}
+	}
 
 	content := workflow.GitHubActions(workflow.GitHubActionsOptions{
-		AllowlistPath: *allowlistPath,
-		MinSeverity:   *minSeverity,
-		OnlyRules:     *onlyRules,
-		Provider:      *provider,
-		GoVersion:     *goVersion,
-		SARIFOutput:   *sarifOutput,
-		ScanPaths:     *scanPaths,
-		Exclude:       *exclude,
-		TriggerPaths:  *triggerPaths,
-		Branches:      *branches,
-		Schedule:      *schedule,
-		ManualTrigger: *manualTrigger,
-		MaxFileBytes:  *maxFileBytes,
-		MaxFindings:   *maxFindings,
+		AllowlistPath:  *allowlistPath,
+		MinSeverity:    *minSeverity,
+		FailOnSeverity: *failOnSeverity,
+		OnlyRules:      *onlyRules,
+		Provider:       *provider,
+		GoVersion:      *goVersion,
+		SARIFOutput:    *sarifOutput,
+		ScanPaths:      *scanPaths,
+		Exclude:        *exclude,
+		TriggerPaths:   *triggerPaths,
+		Branches:       *branches,
+		Schedule:       *schedule,
+		ManualTrigger:  *manualTrigger,
+		MaxFileBytes:   *maxFileBytes,
+		MaxFindings:    *maxFindings,
 	})
 	if *outputPath == "" {
 		fmt.Print(content)

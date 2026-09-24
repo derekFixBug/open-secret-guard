@@ -261,6 +261,12 @@ Generate a minimal GitHub Actions workflow:
 open-secret-guard github-action -allowlist .open-secret-guard.allowlist -output .github/workflows/secret-guard.yml
 ```
 
+Generate a workflow that reports every finding but fails only for high or critical severity:
+
+```sh
+open-secret-guard github-action -fail-on-severity high -output .github/workflows/secret-guard.yml
+```
+
 Pass selected providers through to the workflow scan step when the repository only needs specific credential families:
 
 ```sh

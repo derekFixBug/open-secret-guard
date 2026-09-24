@@ -6,20 +6,21 @@ import (
 )
 
 type GitHubActionsOptions struct {
-	AllowlistPath string
-	MinSeverity   string
-	OnlyRules     string
-	Provider      string
-	GoVersion     string
-	SARIFOutput   string
-	ScanPaths     string
-	Exclude       string
-	TriggerPaths  string
-	Branches      string
-	Schedule      string
-	ManualTrigger bool
-	MaxFileBytes  int
-	MaxFindings   int
+	AllowlistPath  string
+	MinSeverity    string
+	FailOnSeverity string
+	OnlyRules      string
+	Provider       string
+	GoVersion      string
+	SARIFOutput    string
+	ScanPaths      string
+	Exclude        string
+	TriggerPaths   string
+	Branches       string
+	Schedule       string
+	ManualTrigger  bool
+	MaxFileBytes   int
+	MaxFindings    int
 }
 
 func GitHubActions(options GitHubActionsOptions) string {
@@ -56,7 +57,11 @@ func GitHubActions(options GitHubActionsOptions) string {
 	if options.MaxFindings > 0 {
 		scanArgs = append(scanArgs, "-max-findings", strconv.Itoa(options.MaxFindings))
 	}
-	scanArgs = append(scanArgs, "-fail-on-findings")
+	if strings.TrimSpace(options.FailOnSeverity) != "" {
+		scanArgs = append(scanArgs, "-fail-on-severity", shellQuote(options.FailOnSeverity))
+	} else {
+		scanArgs = append(scanArgs, "-fail-on-findings")
+	}
 
 	workflow := "name: Secret guard\n\n" + workflowTriggers(splitCSV(options.TriggerPaths), splitCSV(options.Branches), options.Schedule, options.ManualTrigger)
 

@@ -48,6 +48,16 @@ func TestGitHubActionsIncludesScanOptions(t *testing.T) {
 	}
 }
 
+func TestGitHubActionsUsesFailureSeverityWithoutFilteringReport(t *testing.T) {
+	content := GitHubActions(GitHubActionsOptions{FailOnSeverity: "high"})
+	if !strings.Contains(content, "scan . -fail-on-severity 'high'") {
+		t.Fatalf("expected failure threshold in generated scan:\n%s", content)
+	}
+	if strings.Contains(content, "-fail-on-findings") || strings.Contains(content, "-min-severity") {
+		t.Fatalf("failure threshold should preserve the full scan report:\n%s", content)
+	}
+}
+
 func TestGitHubActionsCanUploadSARIF(t *testing.T) {
 	content := GitHubActions(GitHubActionsOptions{
 		SARIFOutput: "reports/open-secret-guard.sarif",
