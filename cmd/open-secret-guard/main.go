@@ -309,7 +309,11 @@ func runInstallHook(args []string) error {
 	outputPath := flags.String("output", "", "path to write the generated pre-commit hook")
 	command := flags.String("command", "open-secret-guard", "command used inside the generated hook")
 	allowlistPath := flags.String("allowlist", "", "allowlist path used inside the generated hook")
+	exclude := flags.String("exclude", "", "comma-separated file or directory patterns excluded by the hook scan")
+	excludeFile := flags.String("exclude-file", "", "path to newline-separated exclusion patterns used by the hook scan")
 	minSeverity := flags.String("min-severity", "", "minimum severity used inside the generated hook")
+	failOnSeverity := flags.String("fail-on-severity", "", "minimum severity that fails the hook scan: low, medium, high, or critical")
+	maxFileBytes := flags.Int("max-file-bytes", 0, "maximum file size scanned by the hook; 0 uses the default")
 
 	normalizedArgs := normalizeInstallHookArgs(args)
 	if err := flags.Parse(normalizedArgs); err != nil {
@@ -319,16 +323,28 @@ func runInstallHook(args []string) error {
 	if flags.NArg() != 0 {
 		return errors.New("install-hook does not accept positional arguments")
 	}
+	if *maxFileBytes < 0 {
+		return errors.New("max-file-bytes cannot be negative")
+	}
 	if *minSeverity != "" {
 		if _, ok := severityRank(*minSeverity); !ok {
 			return fmt.Errorf("unsupported minimum severity %q", *minSeverity)
 		}
 	}
+	if *failOnSeverity != "" {
+		if _, ok := severityRank(*failOnSeverity); !ok {
+			return fmt.Errorf("unsupported failure severity %q", *failOnSeverity)
+		}
+	}
 
 	content := hook.PreCommit(hook.Options{
-		Command:       *command,
-		AllowlistPath: *allowlistPath,
-		MinSeverity:   *minSeverity,
+		Command:        *command,
+		AllowlistPath:  *allowlistPath,
+		Exclude:        *exclude,
+		ExcludeFile:    *excludeFile,
+		MinSeverity:    *minSeverity,
+		FailOnSeverity: *failOnSeverity,
+		MaxFileBytes:   *maxFileBytes,
 	})
 	if *outputPath == "" {
 		fmt.Print(content)
@@ -630,7 +646,7 @@ func normalizeInstallHookArgs(args []string) []string {
 	for index := 0; index < len(args); index++ {
 		arg := args[index]
 		switch arg {
-		case "-output", "-command", "-allowlist", "-min-severity":
+		case "-output", "-command", "-allowlist", "-exclude", "-exclude-file", "-min-severity", "-fail-on-severity", "-max-file-bytes":
 			flagArgs = append(flagArgs, arg)
 			if index+1 < len(args) {
 				index++
@@ -1109,7 +1125,7 @@ Usage:
   open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard 1password-template <env-example-file> -vault <vault> -item <item> [-output .env.1password] [-preserve-references]
   open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-provider github,gitlab] [-branches main,develop] [-schedule '0 9 * * 1'] [-manual-trigger] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-exclude examples,testdata] [-exclude-file .open-secret-guard.exclude] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608] [-max-findings 20]
-  open-secret-guard install-hook [-output .git/hooks/pre-commit] [-min-severity high]
+  open-secret-guard install-hook [-output .git/hooks/pre-commit] [-allowlist .open-secret-guard.allowlist] [-exclude examples,testdata] [-exclude-file .open-secret-guard.exclude] [-min-severity medium] [-fail-on-severity high] [-max-file-bytes 8388608]
   open-secret-guard rules [-format text|json|markdown|csv] [-min-severity low|medium|high|critical] [-provider github,gitlab]
   open-secret-guard scan [path ...] [flags]
 

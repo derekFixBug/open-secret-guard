@@ -1,13 +1,18 @@
 package hook
 
 import (
+	"strconv"
 	"strings"
 )
 
 type Options struct {
-	Command       string
-	AllowlistPath string
-	MinSeverity   string
+	Command        string
+	AllowlistPath  string
+	Exclude        string
+	ExcludeFile    string
+	MinSeverity    string
+	FailOnSeverity string
+	MaxFileBytes   int
 }
 
 func PreCommit(options Options) string {
@@ -20,10 +25,23 @@ func PreCommit(options Options) string {
 	if strings.TrimSpace(options.AllowlistPath) != "" {
 		args = append(args, "-allowlist", shellQuote(options.AllowlistPath))
 	}
+	if strings.TrimSpace(options.Exclude) != "" {
+		args = append(args, "-exclude", shellQuote(options.Exclude))
+	}
+	if strings.TrimSpace(options.ExcludeFile) != "" {
+		args = append(args, "-exclude-file", shellQuote(options.ExcludeFile))
+	}
 	if strings.TrimSpace(options.MinSeverity) != "" {
 		args = append(args, "-min-severity", shellQuote(options.MinSeverity))
 	}
-	args = append(args, "-fail-on-findings")
+	if options.MaxFileBytes > 0 {
+		args = append(args, "-max-file-bytes", strconv.Itoa(options.MaxFileBytes))
+	}
+	if strings.TrimSpace(options.FailOnSeverity) != "" {
+		args = append(args, "-fail-on-severity", shellQuote(options.FailOnSeverity))
+	} else {
+		args = append(args, "-fail-on-findings")
+	}
 
 	return "#!/bin/sh\n" +
 		"set -eu\n\n" +

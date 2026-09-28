@@ -255,6 +255,12 @@ Only block commits for high- or critical-severity findings:
 open-secret-guard install-hook -min-severity high -output .git/hooks/pre-commit
 ```
 
+Configure the pre-commit scan to share exclusions with CI, scan larger files, and fail only on high or critical findings:
+
+```sh
+open-secret-guard install-hook -exclude-file .open-secret-guard.exclude -max-file-bytes 8388608 -fail-on-severity high -output .git/hooks/pre-commit
+```
+
 Generate a minimal GitHub Actions workflow:
 
 ```sh

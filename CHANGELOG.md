@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `install-hook` options for exclusion patterns, exclusion files, maximum file size, and a separate failure severity threshold.
 - Added `github-action -exclude-file` so generated CI scans can use the same committed exclusion file as local scans.
 - Added `github-action -fail-on-severity` to generate CI scans with a separate failure threshold.
 - Added `-exclude-file` to `scan` and `allowlist-suggest` for reusable newline-separated exclusion patterns.
