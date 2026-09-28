@@ -15,6 +15,7 @@ type GitHubActionsOptions struct {
 	SARIFOutput    string
 	ScanPaths      string
 	Exclude        string
+	ExcludeFile    string
 	TriggerPaths   string
 	Branches       string
 	Schedule       string
@@ -38,6 +39,9 @@ func GitHubActions(options GitHubActionsOptions) string {
 	}
 	if strings.TrimSpace(options.Exclude) != "" {
 		scanArgs = append(scanArgs, "-exclude", shellQuote(options.Exclude))
+	}
+	if strings.TrimSpace(options.ExcludeFile) != "" {
+		scanArgs = append(scanArgs, "-exclude-file", shellQuote(options.ExcludeFile))
 	}
 	if strings.TrimSpace(options.AllowlistPath) != "" {
 		scanArgs = append(scanArgs, "-allowlist", shellQuote(options.AllowlistPath))

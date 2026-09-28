@@ -303,6 +303,12 @@ Keep generated CI aligned with local scans by excluding demo data or test fixtur
 open-secret-guard github-action -exclude 'examples,testdata' -output .github/workflows/secret-guard.yml
 ```
 
+Use a committed exclusion file in generated CI as well:
+
+```sh
+open-secret-guard github-action -exclude-file .open-secret-guard.exclude -output .github/workflows/secret-guard.yml
+```
+
 Choose the pull request and push branches for repositories that do not use only `main`:
 
 ```sh

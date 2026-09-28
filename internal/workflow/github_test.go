@@ -26,6 +26,7 @@ func TestGitHubActionsIncludesScanOptions(t *testing.T) {
 	content := GitHubActions(GitHubActionsOptions{
 		AllowlistPath: ".open-secret-guard.allowlist",
 		Exclude:       "examples,testdata",
+		ExcludeFile:   "config/scan excludes.txt",
 		MinSeverity:   "high",
 		OnlyRules:     "github-token,private-key",
 		Provider:      "github,generic",
@@ -35,6 +36,7 @@ func TestGitHubActionsIncludesScanOptions(t *testing.T) {
 	required := []string{
 		"go-version: '1.23'",
 		"-exclude 'examples,testdata'",
+		"-exclude-file 'config/scan excludes.txt'",
 		"-allowlist '.open-secret-guard.allowlist'",
 		"-min-severity 'high'",
 		"-only-rules 'github-token,private-key'",
