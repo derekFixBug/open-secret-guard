@@ -434,7 +434,7 @@ func runScan(args []string) error {
 	flags := flag.NewFlagSet("scan", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 
-	format := flags.String("format", "text", "output format: text, json, sarif, summary, markdown, or csv")
+	format := flags.String("format", "text", "output format: text, json, sarif, summary, markdown, csv, or github")
 	failOnFindings := flags.Bool("fail-on-findings", false, "exit with a non-zero status when findings are detected")
 	failOnSeverity := flags.String("fail-on-severity", "", "minimum severity that exits non-zero: low, medium, high, or critical")
 	includeHidden := flags.Bool("include-hidden", false, "scan hidden files and directories")
@@ -525,6 +525,8 @@ func runScan(args []string) error {
 		if err := printCSVReport(report); err != nil {
 			return err
 		}
+	case "github":
+		printGitHubReport(report)
 	default:
 		return fmt.Errorf("unsupported format %q", *format)
 	}
@@ -942,6 +944,41 @@ func printCSVReport(report scanner.Report) error {
 	return nil
 }
 
+func printGitHubReport(report scanner.Report) {
+	for _, finding := range report.Findings {
+		level := "notice"
+		switch strings.ToLower(finding.Severity) {
+		case "critical", "high":
+			level = "error"
+		case "medium":
+			level = "warning"
+		}
+
+		properties := []string{
+			"file=" + escapeGitHubProperty(finding.Path),
+			fmt.Sprintf("line=%d", finding.Line),
+			fmt.Sprintf("col=%d", finding.Column),
+			"title=" + escapeGitHubProperty("Open Secret Guard: "+finding.RuleID),
+		}
+		message := fmt.Sprintf("[%s] %s", finding.Severity, finding.Message)
+		fmt.Printf("::%s %s::%s\n", level, strings.Join(properties, ","), escapeGitHubData(message))
+	}
+}
+
+func escapeGitHubProperty(value string) string {
+	value = strings.ReplaceAll(value, "%", "%25")
+	value = strings.ReplaceAll(value, "\r", "%0D")
+	value = strings.ReplaceAll(value, "\n", "%0A")
+	value = strings.ReplaceAll(value, ":", "%3A")
+	return strings.ReplaceAll(value, ",", "%2C")
+}
+
+func escapeGitHubData(value string) string {
+	value = strings.ReplaceAll(value, "%", "%25")
+	value = strings.ReplaceAll(value, "\r", "%0D")
+	return strings.ReplaceAll(value, "\n", "%0A")
+}
+
 func parseCandidateExpiry(value string, now time.Time) (string, error) {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -1130,7 +1167,7 @@ Usage:
   open-secret-guard scan [path ...] [flags]
 
 Flags:
-  -format text|json|sarif|summary|markdown Output format
+  -format text|json|sarif|summary|markdown|csv|github Output format
   -fail-on-findings       Exit non-zero when findings are detected
   -fail-on-severity level Exit non-zero for findings at or above low|medium|high|critical
   -min-severity level     Only report findings at or above low|medium|high|critical

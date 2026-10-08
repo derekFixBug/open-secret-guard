@@ -224,6 +224,12 @@ Export findings as CSV for a spreadsheet or a CI artifact. The export includes m
 open-secret-guard scan . -format csv > open-secret-guard-findings.csv
 ```
 
+Emit GitHub Actions annotations so findings link to their source locations in workflow logs. High and critical findings are errors, medium findings are warnings, and low findings are notices; matched values are never included:
+
+```sh
+open-secret-guard scan . -format github
+```
+
 Generate a safe `.env.example` from a local `.env` file:
 
 ```sh
