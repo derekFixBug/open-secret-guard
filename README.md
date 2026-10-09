@@ -157,6 +157,12 @@ Generate reviewed allowlist candidates from current findings. This command never
 open-secret-guard allowlist-suggest . -min-severity high > .open-secret-guard.allowlist.candidates
 ```
 
+For scripts that consume candidate metadata, emit JSON instead. The output contains only the rule ID, path, line, and optional expiry date:
+
+```sh
+open-secret-guard allowlist-suggest . -min-severity high -format json
+```
+
 For a temporary reviewed exception, append the same inclusive expiry date to every generated candidate. Dates in the past are rejected:
 
 ```sh

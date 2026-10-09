@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `allowlist-suggest -format json` for machine-readable review candidates.
 - Added `scan -format github` to emit GitHub Actions annotations for findings.
 - Added `install-hook` options for exclusion patterns, exclusion files, maximum file size, and a separate failure severity threshold.
 - Added `github-action -exclude-file` so generated CI scans can use the same committed exclusion file as local scans.

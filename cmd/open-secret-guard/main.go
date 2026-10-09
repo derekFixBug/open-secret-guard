@@ -139,6 +139,7 @@ func runAllowlistSuggest(args []string) error {
 	maxFileBytes := flags.Int("max-file-bytes", 0, "maximum scanned file size in bytes; 0 uses the default")
 	maxFindings := flags.Int("max-findings", 0, "maximum number of findings to include; 0 includes all")
 	expiresOn := flags.String("expires-on", "", "optional YYYY-MM-DD expiry appended to every suggested entry")
+	format := flags.String("format", "text", "output format: text or json")
 
 	normalizedArgs := normalizeScanArgs(args)
 	if err := flags.Parse(normalizedArgs); err != nil {
@@ -146,6 +147,9 @@ func runAllowlistSuggest(args []string) error {
 	}
 	if *maxFindings < 0 {
 		return errors.New("max-findings cannot be negative")
+	}
+	if *format != "text" && *format != "json" {
+		return fmt.Errorf("unsupported format %q", *format)
 	}
 	expiry, err := parseCandidateExpiry(*expiresOn, time.Now().UTC())
 	if err != nil {
@@ -187,7 +191,15 @@ func runAllowlistSuggest(args []string) error {
 		return err
 	}
 
-	fmt.Print(allowlistSuggestionText(report, expiry))
+	if *format == "json" {
+		output, err := allowlistSuggestionJSON(report, expiry)
+		if err != nil {
+			return err
+		}
+		fmt.Print(output)
+	} else {
+		fmt.Print(allowlistSuggestionText(report, expiry))
+	}
 	return nil
 }
 
@@ -1018,6 +1030,32 @@ func allowlistSuggestionText(report scanner.Report, expiresOn string) string {
 	return strings.Join(lines, "\n") + "\n"
 }
 
+func allowlistSuggestionJSON(report scanner.Report, expiresOn string) (string, error) {
+	type suggestion struct {
+		RuleID    string `json:"rule_id"`
+		Path      string `json:"path"`
+		Line      int    `json:"line"`
+		ExpiresOn string `json:"expires_on,omitempty"`
+	}
+
+	suggestions := make([]suggestion, 0, len(report.Findings))
+	for _, finding := range report.Findings {
+		suggestions = append(suggestions, suggestion{
+			RuleID:    finding.RuleID,
+			Path:      finding.Path,
+			Line:      finding.Line,
+			ExpiresOn: expiresOn,
+		})
+	}
+	output, err := json.MarshalIndent(struct {
+		Suggestions []suggestion `json:"suggestions"`
+	}{Suggestions: suggestions}, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(output) + "\n", nil
+}
+
 func summaryText(report scanner.Report) string {
 	severityCounts := make(map[string]int)
 	ruleCounts := make(map[string]int)
@@ -1158,7 +1196,7 @@ func printUsage() {
 
 Usage:
   open-secret-guard allowlist-check <allowlist-file> [-format text|json] [-expires-within days]
-  open-secret-guard allowlist-suggest [path ...] [flags]
+  open-secret-guard allowlist-suggest [path ...] [-format text|json] [flags]
   open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard 1password-template <env-example-file> -vault <vault> -item <item> [-output .env.1password] [-preserve-references]
   open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-provider github,gitlab] [-branches main,develop] [-schedule '0 9 * * 1'] [-manual-trigger] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-exclude examples,testdata] [-exclude-file .open-secret-guard.exclude] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608] [-max-findings 20]
