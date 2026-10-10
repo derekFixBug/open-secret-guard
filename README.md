@@ -47,6 +47,12 @@ Return SARIF for GitHub code scanning integrations:
 open-secret-guard scan . -format sarif
 ```
 
+Export findings as JUnit XML for CI systems that collect test reports. Each finding becomes a failing test case, and the report contains no matched secret values:
+
+```sh
+open-secret-guard scan . -format junit > open-secret-guard-results.xml
+```
+
 Fail CI when findings are detected:
 
 ```sh

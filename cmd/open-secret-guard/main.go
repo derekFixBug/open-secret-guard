@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/csv"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"flag"
 	"fmt"
@@ -446,7 +447,7 @@ func runScan(args []string) error {
 	flags := flag.NewFlagSet("scan", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 
-	format := flags.String("format", "text", "output format: text, json, sarif, summary, markdown, csv, or github")
+	format := flags.String("format", "text", "output format: text, json, sarif, summary, markdown, csv, github, or junit")
 	failOnFindings := flags.Bool("fail-on-findings", false, "exit with a non-zero status when findings are detected")
 	failOnSeverity := flags.String("fail-on-severity", "", "minimum severity that exits non-zero: low, medium, high, or critical")
 	includeHidden := flags.Bool("include-hidden", false, "scan hidden files and directories")
@@ -539,6 +540,10 @@ func runScan(args []string) error {
 		}
 	case "github":
 		printGitHubReport(report)
+	case "junit":
+		if err := printJUnitReport(report); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unsupported format %q", *format)
 	}
@@ -991,6 +996,50 @@ func escapeGitHubData(value string) string {
 	return strings.ReplaceAll(value, "\n", "%0A")
 }
 
+type junitFailure struct {
+	Message string `xml:"message,attr"`
+	Text    string `xml:",chardata"`
+}
+
+type junitTestCase struct {
+	Name      string        `xml:"name,attr"`
+	Classname string        `xml:"classname,attr"`
+	Failure   *junitFailure `xml:"failure,omitempty"`
+}
+
+type junitTestSuite struct {
+	XMLName  xml.Name        `xml:"testsuite"`
+	Name     string          `xml:"name,attr"`
+	Tests    int             `xml:"tests,attr"`
+	Failures int             `xml:"failures,attr"`
+	Cases    []junitTestCase `xml:"testcase"`
+}
+
+func printJUnitReport(report scanner.Report) error {
+	suite := junitTestSuite{
+		Name:     "open-secret-guard",
+		Tests:    len(report.Findings),
+		Failures: len(report.Findings),
+		Cases:    make([]junitTestCase, 0, len(report.Findings)),
+	}
+	for _, finding := range report.Findings {
+		suite.Cases = append(suite.Cases, junitTestCase{
+			Name:      finding.RuleID,
+			Classname: finding.Path,
+			Failure: &junitFailure{
+				Message: fmt.Sprintf("%s severity finding at line %d", finding.Severity, finding.Line),
+				Text:    finding.Message,
+			},
+		})
+	}
+	output, err := xml.MarshalIndent(suite, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintf(os.Stdout, "%s%s\n", xml.Header, output)
+	return err
+}
+
 func parseCandidateExpiry(value string, now time.Time) (string, error) {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -1205,7 +1254,7 @@ Usage:
   open-secret-guard scan [path ...] [flags]
 
 Flags:
-  -format text|json|sarif|summary|markdown|csv|github Output format
+  -format text|json|sarif|summary|markdown|csv|github|junit Output format
   -fail-on-findings       Exit non-zero when findings are detected
   -fail-on-severity level Exit non-zero for findings at or above low|medium|high|critical
   -min-severity level     Only report findings at or above low|medium|high|critical

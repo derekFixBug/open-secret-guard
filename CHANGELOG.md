@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `scan -format junit` for CI systems that collect JUnit XML test reports.
 - Added `allowlist-suggest -format json` for machine-readable review candidates.
 - Added `scan -format github` to emit GitHub Actions annotations for findings.
 - Added `install-hook` options for exclusion patterns, exclusion files, maximum file size, and a separate failure severity threshold.
