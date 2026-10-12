@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"encoding/csv"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -447,7 +449,7 @@ func runScan(args []string) error {
 	flags := flag.NewFlagSet("scan", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 
-	format := flags.String("format", "text", "output format: text, json, sarif, summary, markdown, csv, github, or junit")
+	format := flags.String("format", "text", "output format: text, json, sarif, summary, markdown, csv, github, junit, or gitlab")
 	failOnFindings := flags.Bool("fail-on-findings", false, "exit with a non-zero status when findings are detected")
 	failOnSeverity := flags.String("fail-on-severity", "", "minimum severity that exits non-zero: low, medium, high, or critical")
 	includeHidden := flags.Bool("include-hidden", false, "scan hidden files and directories")
@@ -542,6 +544,10 @@ func runScan(args []string) error {
 		printGitHubReport(report)
 	case "junit":
 		if err := printJUnitReport(report); err != nil {
+			return err
+		}
+	case "gitlab":
+		if err := printGitLabReport(report); err != nil {
 			return err
 		}
 	default:
@@ -1040,6 +1046,62 @@ func printJUnitReport(report scanner.Report) error {
 	return err
 }
 
+type gitLabCodeQualityIssue struct {
+	Type        string   `json:"type"`
+	CheckName   string   `json:"check_name"`
+	Description string   `json:"description"`
+	Categories  []string `json:"categories"`
+	Severity    string   `json:"severity"`
+	Fingerprint string   `json:"fingerprint"`
+	Location    struct {
+		Path  string `json:"path"`
+		Lines struct {
+			Begin int `json:"begin"`
+		} `json:"lines"`
+	} `json:"location"`
+}
+
+func printGitLabReport(report scanner.Report) error {
+	issues := make([]gitLabCodeQualityIssue, 0, len(report.Findings))
+	for _, finding := range report.Findings {
+		issue := gitLabCodeQualityIssue{
+			Type:        "issue",
+			CheckName:   finding.RuleID,
+			Description: finding.Message,
+			Categories:  []string{"Security"},
+			Severity:    gitLabSeverity(finding.Severity),
+			Fingerprint: gitLabFingerprint(finding),
+		}
+		issue.Location.Path = finding.Path
+		issue.Location.Lines.Begin = finding.Line
+		issues = append(issues, issue)
+	}
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(issues)
+}
+
+func gitLabSeverity(severity string) string {
+	switch strings.ToLower(severity) {
+	case "critical":
+		return "blocker"
+	case "high":
+		return "critical"
+	case "medium":
+		return "major"
+	case "low":
+		return "minor"
+	default:
+		return "info"
+	}
+}
+
+func gitLabFingerprint(finding scanner.Finding) string {
+	identity := fmt.Sprintf("%s\x00%s\x00%d\x00%d", finding.RuleID, finding.Path, finding.Line, finding.Column)
+	digest := sha256.Sum256([]byte(identity))
+	return hex.EncodeToString(digest[:])
+}
+
 func parseCandidateExpiry(value string, now time.Time) (string, error) {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -1254,7 +1316,7 @@ Usage:
   open-secret-guard scan [path ...] [flags]
 
 Flags:
-  -format text|json|sarif|summary|markdown|csv|github|junit Output format
+  -format text|json|sarif|summary|markdown|csv|github|junit|gitlab Output format
   -fail-on-findings       Exit non-zero when findings are detected
   -fail-on-severity level Exit non-zero for findings at or above low|medium|high|critical
   -min-severity level     Only report findings at or above low|medium|high|critical

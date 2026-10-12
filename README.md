@@ -53,6 +53,12 @@ Export findings as JUnit XML for CI systems that collect test reports. Each find
 open-secret-guard scan . -format junit > open-secret-guard-results.xml
 ```
 
+Generate a GitLab Code Quality report for merge request widgets. Save the JSON as a CI artifact using the `codequality` report type; the report includes stable fingerprints and never includes matched values:
+
+```sh
+open-secret-guard scan . -format gitlab > gl-code-quality-report.json
+```
+
 Fail CI when findings are detected:
 
 ```sh
