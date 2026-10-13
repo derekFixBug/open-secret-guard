@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `github-action -junit-output` to upload JUnit scan reports as GitHub Actions artifacts.
 - Added `scan -format gitlab` for GitLab Code Quality reports with stable finding fingerprints.
 - Added `scan -format junit` for CI systems that collect JUnit XML test reports.
 - Added `allowlist-suggest -format json` for machine-readable review candidates.

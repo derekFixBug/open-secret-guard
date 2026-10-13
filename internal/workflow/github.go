@@ -13,6 +13,7 @@ type GitHubActionsOptions struct {
 	Provider       string
 	GoVersion      string
 	SARIFOutput    string
+	JUnitOutput    string
 	ScanPaths      string
 	Exclude        string
 	ExcludeFile    string
@@ -84,17 +85,29 @@ func GitHubActions(options GitHubActionsOptions) string {
 		"        with:\n" +
 		"          go-version: " + yamlSingleQuote(goVersion) + "\n"
 
-	if strings.TrimSpace(options.SARIFOutput) == "" {
+	if strings.TrimSpace(options.SARIFOutput) == "" && strings.TrimSpace(options.JUnitOutput) == "" {
 		return workflow + "      - run: " + strings.Join(scanArgs, " ") + "\n"
 	}
 
-	scanArgs = append(scanArgs, "-format", "sarif")
+	if strings.TrimSpace(options.SARIFOutput) != "" {
+		scanArgs = append(scanArgs, "-format", "sarif")
+		return workflow +
+			"      - run: " + strings.Join(scanArgs, " ") + " > " + shellQuote(options.SARIFOutput) + "\n" +
+			"      - uses: github/codeql-action/upload-sarif@v3\n" +
+			"        if: always()\n" +
+			"        with:\n" +
+			"          sarif_file: " + yamlSingleQuote(options.SARIFOutput) + "\n"
+	}
+
+	scanArgs = append(scanArgs, "-format", "junit")
 	return workflow +
-		"      - run: " + strings.Join(scanArgs, " ") + " > " + shellQuote(options.SARIFOutput) + "\n" +
-		"      - uses: github/codeql-action/upload-sarif@v3\n" +
+		"      - run: " + strings.Join(scanArgs, " ") + " > " + shellQuote(options.JUnitOutput) + "\n" +
+		"      - uses: actions/upload-artifact@v4\n" +
 		"        if: always()\n" +
 		"        with:\n" +
-		"          sarif_file: " + yamlSingleQuote(options.SARIFOutput) + "\n"
+		"          name: open-secret-guard-junit\n" +
+		"          path: " + yamlSingleQuote(options.JUnitOutput) + "\n" +
+		"          if-no-files-found: error\n"
 }
 
 func shellQuote(value string) string {

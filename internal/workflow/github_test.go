@@ -79,6 +79,26 @@ func TestGitHubActionsCanUploadSARIF(t *testing.T) {
 	}
 }
 
+func TestGitHubActionsCanUploadJUnit(t *testing.T) {
+	content := GitHubActions(GitHubActionsOptions{
+		JUnitOutput: "reports/open-secret-guard.xml",
+	})
+
+	required := []string{
+		"scan . -fail-on-findings -format junit > 'reports/open-secret-guard.xml'",
+		"- uses: actions/upload-artifact@v4",
+		"if: always()",
+		"name: open-secret-guard-junit",
+		"path: 'reports/open-secret-guard.xml'",
+		"if-no-files-found: error",
+	}
+	for _, item := range required {
+		if !strings.Contains(content, item) {
+			t.Fatalf("expected workflow to contain %q:\n%s", item, content)
+		}
+	}
+}
+
 func TestGitHubActionsSupportsTriggerAndScanPaths(t *testing.T) {
 	content := GitHubActions(GitHubActionsOptions{
 		TriggerPaths: "cmd/**, internal/**",

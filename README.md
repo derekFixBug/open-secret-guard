@@ -309,6 +309,12 @@ Generate a Code Scanning-ready workflow that uploads SARIF results:
 open-secret-guard github-action -allowlist .open-secret-guard.allowlist -sarif-output open-secret-guard.sarif -output .github/workflows/secret-guard.yml
 ```
 
+Generate a workflow that uploads a JUnit XML report as an artifact, even when findings fail the scan. `-junit-output` and `-sarif-output` are alternatives because a scan has one output format:
+
+```sh
+open-secret-guard github-action -junit-output reports/open-secret-guard.xml -output .github/workflows/secret-guard.yml
+```
+
 Use the same larger file-size limit in generated CI workflows when repositories contain minified or generated configuration files:
 
 ```sh

@@ -149,6 +149,12 @@ func TestRunGitHubActionRejectsNegativeMaximumFindings(t *testing.T) {
 	}
 }
 
+func TestRunGitHubActionRejectsMultipleReportOutputs(t *testing.T) {
+	if err := runGitHubAction([]string{"-sarif-output", "results.sarif", "-junit-output", "results.xml"}); err == nil {
+		t.Fatal("expected conflicting report outputs to fail")
+	}
+}
+
 func TestRunGitHubActionRejectsUnsupportedFailureSeverity(t *testing.T) {
 	if err := runGitHubAction([]string{"-fail-on-severity", "urgent"}); err == nil {
 		t.Fatal("expected unsupported failure severity to fail")

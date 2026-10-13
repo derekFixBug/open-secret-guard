@@ -52,3 +52,4 @@ The project can use 1Password to store release credentials, test tokens, package
 - 2026-08-26: Added generated CI exclusion support for demo data and test fixtures.
 - 2026-09-01: Added 1Password CLI environment-template generation using secret references instead of plaintext values.
 - 2026-09-02: Added expiring allowlist entries so reviewed exceptions must be renewed deliberately.
+- 2026-10-13: Added generated GitHub Actions support for uploading JUnit scan reports as artifacts.

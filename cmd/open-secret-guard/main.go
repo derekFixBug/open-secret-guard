@@ -263,6 +263,7 @@ func runGitHubAction(args []string) error {
 	provider := flags.String("provider", "", "comma-separated providers used by the scan step")
 	goVersion := flags.String("go-version", "1.22", "Go version used by the workflow")
 	sarifOutput := flags.String("sarif-output", "", "path for optional SARIF output uploaded to GitHub code scanning")
+	junitOutput := flags.String("junit-output", "", "path for optional JUnit XML output uploaded as a workflow artifact")
 	scanPaths := flags.String("scan-paths", "", "comma-separated paths scanned by the generated workflow")
 	exclude := flags.String("exclude", "", "comma-separated paths excluded by the generated scan")
 	excludeFile := flags.String("exclude-file", "", "path to the exclusion patterns file used by the generated scan")
@@ -290,6 +291,9 @@ func runGitHubAction(args []string) error {
 			return fmt.Errorf("unsupported failure severity %q", *failOnSeverity)
 		}
 	}
+	if strings.TrimSpace(*sarifOutput) != "" && strings.TrimSpace(*junitOutput) != "" {
+		return errors.New("github-action accepts only one of -sarif-output or -junit-output")
+	}
 
 	content := workflow.GitHubActions(workflow.GitHubActionsOptions{
 		AllowlistPath:  *allowlistPath,
@@ -299,6 +303,7 @@ func runGitHubAction(args []string) error {
 		Provider:       *provider,
 		GoVersion:      *goVersion,
 		SARIFOutput:    *sarifOutput,
+		JUnitOutput:    *junitOutput,
 		ScanPaths:      *scanPaths,
 		Exclude:        *exclude,
 		ExcludeFile:    *excludeFile,
