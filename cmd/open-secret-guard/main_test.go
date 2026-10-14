@@ -168,8 +168,8 @@ func TestRunAllowlistCheckRequiresOnePath(t *testing.T) {
 }
 
 func TestNormalizeAllowlistCheckArgsAllowsFlagAfterPath(t *testing.T) {
-	args := normalizeAllowlistCheckArgs([]string{".open-secret-guard.allowlist", "-expires-within", "30", "-format", "json"})
-	want := []string{"-expires-within", "30", "-format", "json", ".open-secret-guard.allowlist"}
+	args := normalizeAllowlistCheckArgs([]string{".open-secret-guard.allowlist", "-expires-within", "30", "-require-expiry", "-format", "json"})
+	want := []string{"-expires-within", "30", "-require-expiry", "-format", "json", ".open-secret-guard.allowlist"}
 	if len(args) != len(want) {
 		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
 	}
@@ -192,12 +192,35 @@ func TestRunAllowlistCheckRejectsUnsupportedFormat(t *testing.T) {
 	}
 }
 
+func TestRunAllowlistCheckCanRequireExpiry(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "allowlist.txt")
+	ruleID := scanner.Rules()[0].ID
+	if err := os.WriteFile(path, []byte(ruleID+" examples/sample.env\n"), 0o600); err != nil {
+		t.Fatalf("write allowlist: %v", err)
+	}
+	if err := runAllowlistCheck([]string{"-require-expiry", path}); err == nil || !strings.Contains(err.Error(), "expiry date is required") {
+		t.Fatalf("expected missing expiry to fail, got %v", err)
+	}
+}
+
+func TestRunAllowlistCheckKeepsExpiryOptionalByDefault(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "allowlist.txt")
+	ruleID := scanner.Rules()[0].ID
+	if err := os.WriteFile(path, []byte(ruleID+" examples/sample.env\n"), 0o600); err != nil {
+		t.Fatalf("write allowlist: %v", err)
+	}
+	if err := runAllowlistCheck([]string{path}); err != nil {
+		t.Fatalf("expiry should remain optional by default: %v", err)
+	}
+}
+
 func TestAllowlistCheckReportJSONIncludesOnlyReviewableFields(t *testing.T) {
 	expiresAt := time.Date(2026, time.December, 31, 0, 0, 0, 0, time.UTC)
 	entry := allowlist.Entry{RuleID: "github-token", PathPattern: "config/example.env", Line: 4, ExpiresAt: expiresAt}
 	output, err := allowlistCheckReportJSON(
 		[]allowlist.Entry{entry},
 		[]allowlist.Entry{entry},
+		nil,
 	)
 	if err != nil {
 		t.Fatalf("build JSON report: %v", err)
@@ -212,6 +235,24 @@ func TestAllowlistCheckReportJSONIncludesOnlyReviewableFields(t *testing.T) {
 	}
 	if strings.Contains(output, "RedactedMatch") || strings.Contains(output, "super-secret") {
 		t.Fatalf("JSON report must not contain secret values: %s", output)
+	}
+}
+
+func TestAllowlistCheckReportJSONIncludesMissingExpiryEntries(t *testing.T) {
+	entry := allowlist.Entry{RuleID: "github-token", PathPattern: "config/example.env", Line: 4}
+	output, err := allowlistCheckReportJSON([]allowlist.Entry{entry}, nil, []allowlist.Entry{entry})
+	if err != nil {
+		t.Fatalf("build JSON report: %v", err)
+	}
+	var report allowlistCheckReport
+	if err := json.Unmarshal([]byte(output), &report); err != nil {
+		t.Fatalf("decode JSON report: %v\n%s", err, output)
+	}
+	if len(report.MissingExpiry) != 1 || report.MissingExpiry[0].PathPattern != entry.PathPattern {
+		t.Fatalf("expected missing expiry entry in JSON report, got %#v", report)
+	}
+	if strings.Contains(output, "0001-01-01") {
+		t.Fatalf("missing expiry must not be serialized as a zero date: %s", output)
 	}
 }
 

@@ -163,6 +163,13 @@ Return the allowlist entry count and expiring entries as JSON for CI scripts. Th
 open-secret-guard allowlist-check .open-secret-guard.allowlist -format json -expires-within 30
 ```
 
+Require every exception to have an expiry date. This is opt-in so existing allowlists remain valid by default; JSON output includes entries missing a date:
+
+```sh
+open-secret-guard allowlist-check .open-secret-guard.allowlist -require-expiry
+open-secret-guard allowlist-check .open-secret-guard.allowlist -format json -require-expiry
+```
+
 Generate reviewed allowlist candidates from current findings. This command never changes a file and never prints matched values:
 
 ```sh
