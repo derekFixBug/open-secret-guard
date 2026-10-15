@@ -106,6 +106,16 @@ func TestValidateRejectsUnknownRuleID(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsMalformedPathGlob(t *testing.T) {
+	err := Validate(
+		[]Entry{{RuleID: "github-token", PathPattern: "examples/[*.env"}},
+		[]scanner.RuleMetadata{{ID: "github-token"}},
+	)
+	if err == nil {
+		t.Fatal("expected malformed path glob to fail validation")
+	}
+}
+
 func TestValidateRejectsDuplicateEntry(t *testing.T) {
 	entries := []Entry{
 		{RuleID: "github-token", PathPattern: "examples/*.env", Line: 4},

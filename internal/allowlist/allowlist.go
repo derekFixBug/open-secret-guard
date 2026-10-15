@@ -87,6 +87,9 @@ func ValidateAt(entries []Entry, rules []scanner.RuleMetadata, now time.Time) er
 		if !knownRules[entry.RuleID] {
 			return fmt.Errorf("entry %d uses unknown rule ID %q", entryNumber, entry.RuleID)
 		}
+		if _, err := filepath.Match(entry.PathPattern, ""); err != nil {
+			return fmt.Errorf("entry %d has invalid path glob %q: %w", entryNumber, entry.PathPattern, err)
+		}
 		if !entry.ExpiresAt.IsZero() && !now.Before(entry.ExpiresAt.AddDate(0, 0, 1)) {
 			return fmt.Errorf("entry %d expired on %s", entryNumber, entry.ExpiresAt.Format(time.DateOnly))
 		}

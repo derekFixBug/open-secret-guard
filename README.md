@@ -145,7 +145,7 @@ database-url examples/leaky.env 4
 github-token docs/token.md 12 2026-12-31
 ```
 
-Validate an allowlist before using it in CI. The scanner also performs this validation automatically when `-allowlist` is supplied, so misspelled rule IDs and duplicate entries do not silently weaken a scan:
+Validate an allowlist before using it in CI. The scanner also performs this validation automatically when `-allowlist` is supplied, so misspelled rule IDs, malformed path globs, and duplicate entries do not silently weaken a scan:
 
 ```sh
 open-secret-guard allowlist-check .open-secret-guard.allowlist
