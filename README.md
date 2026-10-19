@@ -170,6 +170,13 @@ open-secret-guard allowlist-check .open-secret-guard.allowlist -require-expiry
 open-secret-guard allowlist-check .open-secret-guard.allowlist -format json -require-expiry
 ```
 
+Require each exception to target one specific line instead of allowing every matching finding in a file. JSON output lists entries without a line number:
+
+```sh
+open-secret-guard allowlist-check .open-secret-guard.allowlist -require-line
+open-secret-guard allowlist-check .open-secret-guard.allowlist -format json -require-line
+```
+
 Generate reviewed allowlist candidates from current findings. This command never changes a file and never prints matched values:
 
 ```sh

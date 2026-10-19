@@ -70,6 +70,7 @@ func runAllowlistCheck(args []string) error {
 	format := flags.String("format", "text", "output format: text or json")
 	expiresWithin := flags.Int("expires-within", -1, "fail when an allowlist entry expires within this many days")
 	requireExpiry := flags.Bool("require-expiry", false, "fail when an allowlist entry has no expiry date")
+	requireLine := flags.Bool("require-line", false, "fail when an allowlist entry has no line number")
 	normalizedArgs := normalizeAllowlistCheckArgs(args)
 	if err := flags.Parse(normalizedArgs); err != nil {
 		return err
@@ -98,11 +99,15 @@ func runAllowlistCheck(args []string) error {
 	if *requireExpiry {
 		missingExpiry = allowlistEntriesWithoutExpiry(entries)
 	}
+	var missingLine []allowlist.Entry
+	if *requireLine {
+		missingLine = allowlistEntriesWithoutLine(entries)
+	}
 	switch *format {
 	case "text":
 		fmt.Printf("Allowlist is valid: %d entr%s.\n", len(entries), pluralSuffix(len(entries)))
 	case "json":
-		output, err := allowlistCheckReportJSON(entries, expiring, missingExpiry)
+		output, err := allowlistCheckReportJSON(entries, expiring, missingExpiry, missingLine)
 		if err != nil {
 			return err
 		}
@@ -114,38 +119,37 @@ func runAllowlistCheck(args []string) error {
 	if len(missingExpiry) > 0 {
 		return fmt.Errorf("expiry date is required for %d allowlist entr%s", len(missingExpiry), pluralSuffix(len(missingExpiry)))
 	}
+	if len(missingLine) > 0 {
+		return fmt.Errorf("line number is required for %d allowlist entr%s", len(missingLine), pluralSuffix(len(missingLine)))
+	}
 
 	return nil
 }
 
 type allowlistCheckReport struct {
-	Entries       int                              `json:"entries"`
-	Expiring      []allowlist.Entry                `json:"expiring"`
-	MissingExpiry []allowlistCheckMissingExpiryRow `json:"missing_expiry,omitempty"`
+	Entries       int                      `json:"entries"`
+	Expiring      []allowlist.Entry        `json:"expiring"`
+	MissingExpiry []allowlistCheckIssueRow `json:"missing_expiry,omitempty"`
+	MissingLine   []allowlistCheckIssueRow `json:"missing_line,omitempty"`
 }
 
-type allowlistCheckMissingExpiryRow struct {
+type allowlistCheckIssueRow struct {
 	RuleID      string `json:"ruleId"`
 	PathPattern string `json:"pathPattern"`
 	Line        int    `json:"line,omitempty"`
 }
 
-func allowlistCheckReportJSON(entries []allowlist.Entry, expiring, missingExpiry []allowlist.Entry) (string, error) {
+func allowlistCheckReportJSON(entries []allowlist.Entry, expiring, missingExpiry, missingLine []allowlist.Entry) (string, error) {
 	if expiring == nil {
 		expiring = []allowlist.Entry{}
 	}
-	missingRows := make([]allowlistCheckMissingExpiryRow, 0, len(missingExpiry))
-	for _, entry := range missingExpiry {
-		missingRows = append(missingRows, allowlistCheckMissingExpiryRow{
-			RuleID:      entry.RuleID,
-			PathPattern: entry.PathPattern,
-			Line:        entry.Line,
-		})
-	}
+	missingExpiryRows := allowlistCheckRows(missingExpiry)
+	missingLineRows := allowlistCheckRows(missingLine)
 	output, err := json.MarshalIndent(allowlistCheckReport{
 		Entries:       len(entries),
 		Expiring:      expiring,
-		MissingExpiry: missingRows,
+		MissingExpiry: missingExpiryRows,
+		MissingLine:   missingLineRows,
 	}, "", "  ")
 	if err != nil {
 		return "", err
@@ -153,10 +157,32 @@ func allowlistCheckReportJSON(entries []allowlist.Entry, expiring, missingExpiry
 	return string(output) + "\n", nil
 }
 
+func allowlistCheckRows(entries []allowlist.Entry) []allowlistCheckIssueRow {
+	rows := make([]allowlistCheckIssueRow, 0, len(entries))
+	for _, entry := range entries {
+		rows = append(rows, allowlistCheckIssueRow{
+			RuleID:      entry.RuleID,
+			PathPattern: entry.PathPattern,
+			Line:        entry.Line,
+		})
+	}
+	return rows
+}
+
 func allowlistEntriesWithoutExpiry(entries []allowlist.Entry) []allowlist.Entry {
 	var missing []allowlist.Entry
 	for _, entry := range entries {
 		if entry.ExpiresAt.IsZero() {
+			missing = append(missing, entry)
+		}
+	}
+	return missing
+}
+
+func allowlistEntriesWithoutLine(entries []allowlist.Entry) []allowlist.Entry {
+	var missing []allowlist.Entry
+	for _, entry := range entries {
+		if entry.Line == 0 {
 			missing = append(missing, entry)
 		}
 	}
@@ -645,7 +671,7 @@ func normalizeAllowlistCheckArgs(args []string) []string {
 	for index := 0; index < len(args); index++ {
 		arg := args[index]
 		switch arg {
-		case "-require-expiry":
+		case "-require-expiry", "-require-line":
 			flagArgs = append(flagArgs, arg)
 		case "-format", "-expires-within":
 			flagArgs = append(flagArgs, arg)
@@ -1347,7 +1373,7 @@ func printUsage() {
 	fmt.Println(`open-secret-guard
 
 Usage:
-  open-secret-guard allowlist-check <allowlist-file> [-format text|json] [-expires-within days] [-require-expiry]
+  open-secret-guard allowlist-check <allowlist-file> [-format text|json] [-expires-within days] [-require-expiry] [-require-line]
   open-secret-guard allowlist-suggest [path ...] [-format text|json] [flags]
   open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard 1password-template <env-example-file> -vault <vault> -item <item> [-output .env.1password] [-preserve-references]
