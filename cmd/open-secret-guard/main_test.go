@@ -168,8 +168,8 @@ func TestRunAllowlistCheckRequiresOnePath(t *testing.T) {
 }
 
 func TestNormalizeAllowlistCheckArgsAllowsFlagAfterPath(t *testing.T) {
-	args := normalizeAllowlistCheckArgs([]string{".open-secret-guard.allowlist", "-expires-within", "30", "-require-expiry", "-require-line", "-format", "json"})
-	want := []string{"-expires-within", "30", "-require-expiry", "-require-line", "-format", "json", ".open-secret-guard.allowlist"}
+	args := normalizeAllowlistCheckArgs([]string{".open-secret-guard.allowlist", "-expires-within", "30", "-max-expiry-days", "90", "-require-expiry", "-require-line", "-format", "json"})
+	want := []string{"-expires-within", "30", "-max-expiry-days", "90", "-require-expiry", "-require-line", "-format", "json", ".open-secret-guard.allowlist"}
 	if len(args) != len(want) {
 		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
 	}
@@ -183,6 +183,23 @@ func TestNormalizeAllowlistCheckArgsAllowsFlagAfterPath(t *testing.T) {
 func TestRunAllowlistCheckRejectsInvalidExpiryWindow(t *testing.T) {
 	if err := runAllowlistCheck([]string{"-expires-within", "-2", ".open-secret-guard.allowlist"}); err == nil {
 		t.Fatal("expected invalid expiry window to fail")
+	}
+}
+
+func TestRunAllowlistCheckRejectsInvalidMaximumExpiryWindow(t *testing.T) {
+	if err := runAllowlistCheck([]string{"-max-expiry-days", "-2", ".open-secret-guard.allowlist"}); err == nil {
+		t.Fatal("expected invalid maximum expiry window to fail")
+	}
+}
+
+func TestRunAllowlistCheckEnforcesMaximumExpiryWindow(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "allowlist.txt")
+	ruleID := scanner.Rules()[0].ID
+	if err := os.WriteFile(path, []byte(ruleID+" examples/sample.env 3 2099-12-31\n"), 0o600); err != nil {
+		t.Fatalf("write allowlist: %v", err)
+	}
+	if err := runAllowlistCheck([]string{"-max-expiry-days", "90", path}); err == nil || !strings.Contains(err.Error(), "expire later than 90 day(s)") {
+		t.Fatalf("expected long-lived exception to fail, got %v", err)
 	}
 }
 
@@ -222,6 +239,7 @@ func TestAllowlistCheckReportJSONIncludesOnlyReviewableFields(t *testing.T) {
 		[]allowlist.Entry{entry},
 		nil,
 		nil,
+		nil,
 	)
 	if err != nil {
 		t.Fatalf("build JSON report: %v", err)
@@ -241,7 +259,7 @@ func TestAllowlistCheckReportJSONIncludesOnlyReviewableFields(t *testing.T) {
 
 func TestAllowlistCheckReportJSONIncludesMissingExpiryEntries(t *testing.T) {
 	entry := allowlist.Entry{RuleID: "github-token", PathPattern: "config/example.env", Line: 4}
-	output, err := allowlistCheckReportJSON([]allowlist.Entry{entry}, nil, []allowlist.Entry{entry}, nil)
+	output, err := allowlistCheckReportJSON([]allowlist.Entry{entry}, nil, nil, []allowlist.Entry{entry}, nil)
 	if err != nil {
 		t.Fatalf("build JSON report: %v", err)
 	}
@@ -254,6 +272,25 @@ func TestAllowlistCheckReportJSONIncludesMissingExpiryEntries(t *testing.T) {
 	}
 	if strings.Contains(output, "0001-01-01") {
 		t.Fatalf("missing expiry must not be serialized as a zero date: %s", output)
+	}
+}
+
+func TestAllowlistCheckReportJSONIncludesLongLivedEntries(t *testing.T) {
+	entry := allowlist.Entry{
+		RuleID:      "github-token",
+		PathPattern: "config/example.env",
+		ExpiresAt:   time.Date(2099, time.December, 31, 0, 0, 0, 0, time.UTC),
+	}
+	output, err := allowlistCheckReportJSON([]allowlist.Entry{entry}, nil, []allowlist.Entry{entry}, nil, nil)
+	if err != nil {
+		t.Fatalf("build JSON report: %v", err)
+	}
+	var report allowlistCheckReport
+	if err := json.Unmarshal([]byte(output), &report); err != nil {
+		t.Fatalf("decode JSON report: %v\n%s", err, output)
+	}
+	if len(report.ExpiresLater) != 1 || report.ExpiresLater[0].PathPattern != entry.PathPattern {
+		t.Fatalf("expected long-lived entry in JSON report, got %#v", report)
 	}
 }
 
@@ -281,7 +318,7 @@ func TestRunAllowlistCheckAcceptsLineNumberWhenRequired(t *testing.T) {
 
 func TestAllowlistCheckReportJSONIncludesMissingLineEntries(t *testing.T) {
 	entry := allowlist.Entry{RuleID: "github-token", PathPattern: "config/example.env"}
-	output, err := allowlistCheckReportJSON([]allowlist.Entry{entry}, nil, nil, []allowlist.Entry{entry})
+	output, err := allowlistCheckReportJSON([]allowlist.Entry{entry}, nil, nil, nil, []allowlist.Entry{entry})
 	if err != nil {
 		t.Fatalf("build JSON report: %v", err)
 	}
@@ -390,6 +427,34 @@ func TestSummaryReportIncludesCountsWithoutMatches(t *testing.T) {
 	}
 	if strings.Contains(summary, "never-print-this") {
 		t.Fatalf("summary should not contain redacted matches:\n%s", summary)
+	}
+}
+
+func TestSummaryJSONIncludesAggregateCountsWithoutPathsOrMatches(t *testing.T) {
+	report := scanner.Report{
+		ScannedFiles: 3,
+		SkippedFiles: 1,
+		Findings: []scanner.Finding{
+			{RuleID: "github-token", Severity: "high", Path: "private/config.env", RedactedMatch: "never-print-this"},
+			{RuleID: "github-token", Severity: "high", Path: "private/other.env", RedactedMatch: "never-print-this"},
+			{RuleID: "private-key", Severity: "critical", Path: "private/key.pem", RedactedMatch: "never-print-this"},
+		},
+	}
+	output, err := summaryJSON(report)
+	if err != nil {
+		t.Fatalf("build JSON summary: %v", err)
+	}
+	var summary scanSummary
+	if err := json.Unmarshal([]byte(output), &summary); err != nil {
+		t.Fatalf("decode JSON summary: %v\n%s", err, output)
+	}
+	if summary.ScannedFiles != 3 || summary.SkippedFiles != 1 || summary.Findings != 3 || summary.BySeverity["high"] != 2 || summary.BySeverity["critical"] != 1 || summary.ByRule["github-token"] != 2 {
+		t.Fatalf("unexpected JSON summary: %#v", summary)
+	}
+	for _, forbidden := range []string{"private/config.env", "never-print-this", "redactedMatch"} {
+		if strings.Contains(output, forbidden) {
+			t.Fatalf("JSON summary must not contain %q: %s", forbidden, output)
+		}
 	}
 }
 

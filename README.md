@@ -163,6 +163,13 @@ Return the allowlist entry count and expiring entries as JSON for CI scripts. Th
 open-secret-guard allowlist-check .open-secret-guard.allowlist -format json -expires-within 30
 ```
 
+Set a maximum exception lifetime. Entries expiring after the allowed window fail the check and are included in JSON output:
+
+```sh
+open-secret-guard allowlist-check .open-secret-guard.allowlist -max-expiry-days 90
+open-secret-guard allowlist-check .open-secret-guard.allowlist -format json -max-expiry-days 90
+```
+
 Require every exception to have an expiry date. This is opt-in so existing allowlists remain valid by default; JSON output includes entries missing a date:
 
 ```sh
@@ -242,6 +249,12 @@ Print a CI-friendly scan summary without paths or matched values:
 
 ```sh
 open-secret-guard scan . -format summary
+```
+
+Get the same aggregate counts as JSON for CI dashboards and scripts. The output contains no file paths or matched values:
+
+```sh
+open-secret-guard scan . -format summary-json
 ```
 
 Create a Markdown findings table for a pull request or issue. It includes paths, rules, providers, and severity levels, but never matched values:

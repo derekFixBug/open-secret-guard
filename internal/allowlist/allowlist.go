@@ -126,6 +126,26 @@ func ExpiringWithin(entries []Entry, now time.Time, days int) []Entry {
 	return expiring
 }
 
+// ExpiringAfter returns active entries whose inclusive expiry date is later
+// than now plus days. Entries without an expiry date are excluded.
+func ExpiringAfter(entries []Entry, now time.Time, days int) []Entry {
+	if days < 0 {
+		return nil
+	}
+
+	now = now.UTC()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	latest := today.AddDate(0, 0, days)
+
+	var expiring []Entry
+	for _, entry := range entries {
+		if entry.ExpiresAt.After(latest) {
+			expiring = append(expiring, entry)
+		}
+	}
+	return expiring
+}
+
 func parseLine(line string) (Entry, error) {
 	fields := strings.Fields(line)
 	if len(fields) < 2 || len(fields) > 4 {

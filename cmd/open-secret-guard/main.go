@@ -69,6 +69,7 @@ func runAllowlistCheck(args []string) error {
 
 	format := flags.String("format", "text", "output format: text or json")
 	expiresWithin := flags.Int("expires-within", -1, "fail when an allowlist entry expires within this many days")
+	maxExpiryDays := flags.Int("max-expiry-days", -1, "fail when an allowlist entry expires later than this many days from today")
 	requireExpiry := flags.Bool("require-expiry", false, "fail when an allowlist entry has no expiry date")
 	requireLine := flags.Bool("require-line", false, "fail when an allowlist entry has no line number")
 	normalizedArgs := normalizeAllowlistCheckArgs(args)
@@ -80,6 +81,9 @@ func runAllowlistCheck(args []string) error {
 	}
 	if *expiresWithin < -1 {
 		return errors.New("expires-within cannot be less than -1")
+	}
+	if *maxExpiryDays < -1 {
+		return errors.New("max-expiry-days cannot be less than -1")
 	}
 
 	paths := flags.Args()
@@ -95,6 +99,7 @@ func runAllowlistCheck(args []string) error {
 		return err
 	}
 	expiring := allowlist.ExpiringWithin(entries, time.Now().UTC(), *expiresWithin)
+	tooFar := allowlist.ExpiringAfter(entries, time.Now().UTC(), *maxExpiryDays)
 	var missingExpiry []allowlist.Entry
 	if *requireExpiry {
 		missingExpiry = allowlistEntriesWithoutExpiry(entries)
@@ -107,7 +112,7 @@ func runAllowlistCheck(args []string) error {
 	case "text":
 		fmt.Printf("Allowlist is valid: %d entr%s.\n", len(entries), pluralSuffix(len(entries)))
 	case "json":
-		output, err := allowlistCheckReportJSON(entries, expiring, missingExpiry, missingLine)
+		output, err := allowlistCheckReportJSON(entries, expiring, tooFar, missingExpiry, missingLine)
 		if err != nil {
 			return err
 		}
@@ -115,6 +120,9 @@ func runAllowlistCheck(args []string) error {
 	}
 	if len(expiring) > 0 {
 		return fmt.Errorf("%d allowlist entr%s expire within %d day(s): %s", len(expiring), pluralSuffix(len(expiring)), *expiresWithin, formatExpiringAllowlistEntries(expiring))
+	}
+	if len(tooFar) > 0 {
+		return fmt.Errorf("%d allowlist entr%s expire later than %d day(s): %s", len(tooFar), pluralSuffix(len(tooFar)), *maxExpiryDays, formatExpiringAllowlistEntries(tooFar))
 	}
 	if len(missingExpiry) > 0 {
 		return fmt.Errorf("expiry date is required for %d allowlist entr%s", len(missingExpiry), pluralSuffix(len(missingExpiry)))
@@ -129,6 +137,7 @@ func runAllowlistCheck(args []string) error {
 type allowlistCheckReport struct {
 	Entries       int                      `json:"entries"`
 	Expiring      []allowlist.Entry        `json:"expiring"`
+	ExpiresLater  []allowlist.Entry        `json:"expires_later_than,omitempty"`
 	MissingExpiry []allowlistCheckIssueRow `json:"missing_expiry,omitempty"`
 	MissingLine   []allowlistCheckIssueRow `json:"missing_line,omitempty"`
 }
@@ -139,7 +148,7 @@ type allowlistCheckIssueRow struct {
 	Line        int    `json:"line,omitempty"`
 }
 
-func allowlistCheckReportJSON(entries []allowlist.Entry, expiring, missingExpiry, missingLine []allowlist.Entry) (string, error) {
+func allowlistCheckReportJSON(entries []allowlist.Entry, expiring, expiresLater, missingExpiry, missingLine []allowlist.Entry) (string, error) {
 	if expiring == nil {
 		expiring = []allowlist.Entry{}
 	}
@@ -148,6 +157,7 @@ func allowlistCheckReportJSON(entries []allowlist.Entry, expiring, missingExpiry
 	output, err := json.MarshalIndent(allowlistCheckReport{
 		Entries:       len(entries),
 		Expiring:      expiring,
+		ExpiresLater:  expiresLater,
 		MissingExpiry: missingExpiryRows,
 		MissingLine:   missingLineRows,
 	}, "", "  ")
@@ -514,7 +524,7 @@ func runScan(args []string) error {
 	flags := flag.NewFlagSet("scan", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 
-	format := flags.String("format", "text", "output format: text, json, sarif, summary, markdown, csv, github, junit, or gitlab")
+	format := flags.String("format", "text", "output format: text, json, sarif, summary, summary-json, markdown, csv, github, junit, or gitlab")
 	failOnFindings := flags.Bool("fail-on-findings", false, "exit with a non-zero status when findings are detected")
 	failOnSeverity := flags.String("fail-on-severity", "", "minimum severity that exits non-zero: low, medium, high, or critical")
 	includeHidden := flags.Bool("include-hidden", false, "scan hidden files and directories")
@@ -599,6 +609,12 @@ func runScan(args []string) error {
 		}
 	case "summary":
 		printSummaryReport(report)
+	case "summary-json":
+		output, err := summaryJSON(report)
+		if err != nil {
+			return err
+		}
+		fmt.Print(output)
 	case "markdown":
 		printMarkdownReport(report)
 	case "csv":
@@ -673,7 +689,7 @@ func normalizeAllowlistCheckArgs(args []string) []string {
 		switch arg {
 		case "-require-expiry", "-require-line":
 			flagArgs = append(flagArgs, arg)
-		case "-format", "-expires-within":
+		case "-format", "-expires-within", "-max-expiry-days":
 			flagArgs = append(flagArgs, arg)
 			if index+1 < len(args) {
 				index++
@@ -1273,6 +1289,33 @@ func summaryText(report scanner.Report) string {
 	return strings.Join(lines, "\n") + "\n"
 }
 
+type scanSummary struct {
+	ScannedFiles int            `json:"scannedFiles"`
+	SkippedFiles int            `json:"skippedFiles"`
+	Findings     int            `json:"findings"`
+	BySeverity   map[string]int `json:"bySeverity"`
+	ByRule       map[string]int `json:"byRule"`
+}
+
+func summaryJSON(report scanner.Report) (string, error) {
+	summary := scanSummary{
+		ScannedFiles: report.ScannedFiles,
+		SkippedFiles: report.SkippedFiles,
+		Findings:     len(report.Findings),
+		BySeverity:   make(map[string]int),
+		ByRule:       make(map[string]int),
+	}
+	for _, finding := range report.Findings {
+		summary.BySeverity[finding.Severity]++
+		summary.ByRule[finding.RuleID]++
+	}
+	output, err := json.MarshalIndent(summary, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(output) + "\n", nil
+}
+
 func markdownReportText(report scanner.Report) string {
 	if len(report.Findings) == 0 {
 		return "No likely secrets found.\n"
@@ -1373,7 +1416,7 @@ func printUsage() {
 	fmt.Println(`open-secret-guard
 
 Usage:
-  open-secret-guard allowlist-check <allowlist-file> [-format text|json] [-expires-within days] [-require-expiry] [-require-line]
+  open-secret-guard allowlist-check <allowlist-file> [-format text|json] [-expires-within days] [-max-expiry-days days] [-require-expiry] [-require-line]
   open-secret-guard allowlist-suggest [path ...] [-format text|json] [flags]
   open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard 1password-template <env-example-file> -vault <vault> -item <item> [-output .env.1password] [-preserve-references]
@@ -1383,7 +1426,7 @@ Usage:
   open-secret-guard scan [path ...] [flags]
 
 Flags:
-  -format text|json|sarif|summary|markdown|csv|github|junit|gitlab Output format
+  -format text|json|sarif|summary|summary-json|markdown|csv|github|junit|gitlab Output format
   -fail-on-findings       Exit non-zero when findings are detected
   -fail-on-severity level Exit non-zero for findings at or above low|medium|high|critical
   -min-severity level     Only report findings at or above low|medium|high|critical

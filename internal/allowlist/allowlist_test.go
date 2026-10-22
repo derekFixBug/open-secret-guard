@@ -170,6 +170,21 @@ func TestExpiringWithinIncludesOnlyActiveEntriesInWindow(t *testing.T) {
 	}
 }
 
+func TestExpiringAfterIncludesOnlyEntriesBeyondMaximumWindow(t *testing.T) {
+	now := mustDate(t, "2026-09-03")
+	entries := []Entry{
+		{RuleID: "github-token", PathPattern: "today", ExpiresAt: mustDate(t, "2026-09-03")},
+		{RuleID: "github-token", PathPattern: "boundary", ExpiresAt: mustDate(t, "2026-09-10")},
+		{RuleID: "github-token", PathPattern: "too-late", ExpiresAt: mustDate(t, "2026-09-11")},
+		{RuleID: "github-token", PathPattern: "no-expiry"},
+	}
+
+	got := ExpiringAfter(entries, now, 7)
+	if len(got) != 1 || got[0].PathPattern != "too-late" {
+		t.Fatalf("expected only entries beyond the seven-day window, got %#v", got)
+	}
+}
+
 func TestExpiringWithinRejectsNegativeWindow(t *testing.T) {
 	entries := []Entry{{RuleID: "github-token", PathPattern: "example", ExpiresAt: mustDate(t, "2026-09-03")}}
 	if got := ExpiringWithin(entries, mustDate(t, "2026-09-03"), -1); len(got) != 0 {
