@@ -251,7 +251,7 @@ Print a CI-friendly scan summary without paths or matched values:
 open-secret-guard scan . -format summary
 ```
 
-Get the same aggregate counts as JSON for CI dashboards and scripts. The output contains no file paths or matched values:
+Get aggregate counts by severity, provider, and rule as JSON for CI dashboards and scripts. The output contains no file paths or matched values:
 
 ```sh
 open-secret-guard scan . -format summary-json

@@ -448,7 +448,7 @@ func TestSummaryJSONIncludesAggregateCountsWithoutPathsOrMatches(t *testing.T) {
 	if err := json.Unmarshal([]byte(output), &summary); err != nil {
 		t.Fatalf("decode JSON summary: %v\n%s", err, output)
 	}
-	if summary.ScannedFiles != 3 || summary.SkippedFiles != 1 || summary.Findings != 3 || summary.BySeverity["high"] != 2 || summary.BySeverity["critical"] != 1 || summary.ByRule["github-token"] != 2 {
+	if summary.ScannedFiles != 3 || summary.SkippedFiles != 1 || summary.Findings != 3 || summary.BySeverity["high"] != 2 || summary.BySeverity["critical"] != 1 || summary.ByProvider["github"] != 2 || summary.ByProvider["generic"] != 1 || summary.ByRule["github-token"] != 2 {
 		t.Fatalf("unexpected JSON summary: %#v", summary)
 	}
 	for _, forbidden := range []string{"private/config.env", "never-print-this", "redactedMatch"} {

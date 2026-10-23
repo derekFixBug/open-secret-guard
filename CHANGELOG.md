@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added provider-level counts to `scan -format summary-json` for CI reporting.
 - Added `allowlist-check -max-expiry-days` to enforce a maximum lifetime for review exceptions.
 - Added `scan -format summary-json` for aggregate CI results without paths or matched values.
 - Added `github-action -junit-output` to upload JUnit scan reports as GitHub Actions artifacts.

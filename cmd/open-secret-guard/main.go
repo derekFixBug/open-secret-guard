@@ -1294,19 +1294,30 @@ type scanSummary struct {
 	SkippedFiles int            `json:"skippedFiles"`
 	Findings     int            `json:"findings"`
 	BySeverity   map[string]int `json:"bySeverity"`
+	ByProvider   map[string]int `json:"byProvider"`
 	ByRule       map[string]int `json:"byRule"`
 }
 
 func summaryJSON(report scanner.Report) (string, error) {
+	providersByRule := make(map[string]string, len(scanner.Rules()))
+	for _, rule := range scanner.Rules() {
+		providersByRule[rule.ID] = rule.Provider
+	}
 	summary := scanSummary{
 		ScannedFiles: report.ScannedFiles,
 		SkippedFiles: report.SkippedFiles,
 		Findings:     len(report.Findings),
 		BySeverity:   make(map[string]int),
+		ByProvider:   make(map[string]int),
 		ByRule:       make(map[string]int),
 	}
 	for _, finding := range report.Findings {
 		summary.BySeverity[finding.Severity]++
+		provider, ok := providersByRule[finding.RuleID]
+		if !ok {
+			provider = "unknown"
+		}
+		summary.ByProvider[provider]++
 		summary.ByRule[finding.RuleID]++
 	}
 	output, err := json.MarshalIndent(summary, "", "  ")
