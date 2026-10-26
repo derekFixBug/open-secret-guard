@@ -45,6 +45,34 @@ func TestScanFindsLikelySecrets(t *testing.T) {
 	}
 }
 
+func TestScanReadsStandardInput(t *testing.T) {
+	content := "GITHUB_TOKEN=" + githubTokenFixture() + "\n"
+	report, err := scan(Options{Paths: []string{"-"}}, strings.NewReader(content))
+	if err != nil {
+		t.Fatalf("scan standard input: %v", err)
+	}
+	if report.ScannedFiles != 1 || len(report.Findings) != 1 {
+		t.Fatalf("expected one scanned input and one finding, got %#v", report)
+	}
+	if report.Findings[0].Path != "stdin" || report.Findings[0].RuleID != "github-token" {
+		t.Fatalf("unexpected stdin finding: %#v", report.Findings[0])
+	}
+}
+
+func TestScanStandardInputRespectsMaximumFileSize(t *testing.T) {
+	content := "GITHUB_TOKEN=" + githubTokenFixture() + "\n"
+	report, err := scan(Options{
+		Paths:        []string{"-"},
+		MaxFileBytes: 8,
+	}, strings.NewReader(content))
+	if err != nil {
+		t.Fatalf("scan oversized standard input: %v", err)
+	}
+	if report.ScannedFiles != 0 || report.SkippedFiles != 1 || len(report.Findings) != 0 {
+		t.Fatalf("expected oversized input to be skipped, got %#v", report)
+	}
+}
+
 func TestScanFindsProviderSpecificTokens(t *testing.T) {
 	content := strings.Join([]string{
 		"GITHUB_FINE_GRAINED=" + githubFineGrainedTokenFixture(),

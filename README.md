@@ -47,6 +47,12 @@ Return SARIF for GitHub code scanning integrations:
 open-secret-guard scan . -format sarif
 ```
 
+Scan piped content without writing it to disk. Standard input is treated as one source named `stdin` and respects the configured maximum file size:
+
+```sh
+git diff --cached | open-secret-guard scan - -format summary
+```
+
 Export findings as JUnit XML for CI systems that collect test reports. Each finding becomes a failing test case, and the report contains no matched secret values:
 
 ```sh

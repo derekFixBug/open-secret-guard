@@ -238,6 +238,10 @@ var skippedDirs = map[string]bool{
 }
 
 func Scan(options Options) (Report, error) {
+	return scan(options, os.Stdin)
+}
+
+func scan(options Options, input io.Reader) (Report, error) {
 	if options.MaxFileBytes < 0 {
 		return Report{}, errors.New("maximum file size cannot be negative")
 	}
@@ -247,6 +251,19 @@ func Scan(options Options) (Report, error) {
 
 	var report Report
 	for _, path := range options.Paths {
+		if path == "-" {
+			if input == nil {
+				return report, errors.New("standard input is unavailable")
+			}
+			if isExcluded("stdin", options.Exclude) {
+				report.SkippedFiles++
+				continue
+			}
+			if err := scanReader("stdin", input, &report, options.MaxFileBytes); err != nil {
+				return report, err
+			}
+			continue
+		}
 		if err := scanPath(path, options, &report); err != nil {
 			return report, err
 		}
@@ -269,6 +286,30 @@ func Scan(options Options) (Report, error) {
 	}
 
 	return report, nil
+}
+
+func scanReader(path string, input io.Reader, report *Report, configuredMaxBytes int) error {
+	maxBytes := configuredMaxFileBytes(configuredMaxBytes)
+	limit := int64(maxBytes)
+	if limit < int64(^uint64(0)>>1) {
+		limit++
+	}
+	content, err := io.ReadAll(io.LimitReader(input, limit))
+	if err != nil {
+		return err
+	}
+	if len(content) > maxBytes {
+		report.SkippedFiles++
+		return nil
+	}
+	if isBinary(content) {
+		report.SkippedFiles++
+		return nil
+	}
+
+	report.ScannedFiles++
+	report.Findings = append(report.Findings, scanContentWithMaxBytes(path, string(content), maxBytes)...)
+	return nil
 }
 
 func filterAllowedFindings(findings []Finding, allowlist Allowlist) []Finding {
