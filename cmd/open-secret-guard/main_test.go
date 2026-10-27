@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"testing"
 	"time"
@@ -128,6 +129,26 @@ func TestRunRulesRejectsArguments(t *testing.T) {
 func TestRunRulesRejectsUnsupportedFormat(t *testing.T) {
 	if err := runRules([]string{"-format", "yaml"}); err == nil {
 		t.Fatal("expected rules command to reject unsupported format")
+	}
+}
+
+func TestRunVersionRejectsArguments(t *testing.T) {
+	if err := runVersion([]string{"extra"}); err == nil {
+		t.Fatal("expected version command to reject arguments")
+	}
+}
+
+func TestFormatVersionIncludesRevisionAndDirtyState(t *testing.T) {
+	info := &debug.BuildInfo{
+		Main: debug.Module{Version: "v1.2.3"},
+		Settings: []debug.BuildSetting{
+			{Key: "vcs.revision", Value: "0123456789abcdef"},
+			{Key: "vcs.modified", Value: "true"},
+		},
+	}
+
+	if got, want := formatVersion(info), "open-secret-guard v1.2.3 (0123456789ab, modified)"; got != want {
+		t.Fatalf("expected %q, got %q", want, got)
 	}
 }
 

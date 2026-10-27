@@ -11,6 +11,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -53,6 +54,8 @@ func run(args []string) error {
 		return run1PasswordTemplate(args[1:])
 	case "rules":
 		return runRules(args[1:])
+	case "version":
+		return runVersion(args[1:])
 	case "scan":
 		return runScan(args[1:])
 	case "help", "-h", "--help":
@@ -61,6 +64,49 @@ func run(args []string) error {
 	default:
 		return fmt.Errorf("unknown command %q", args[0])
 	}
+}
+
+func runVersion(args []string) error {
+	if len(args) != 0 {
+		return errors.New("version does not accept arguments")
+	}
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		fmt.Println("open-secret-guard version unavailable")
+		return nil
+	}
+	fmt.Println(formatVersion(info))
+	return nil
+}
+
+func formatVersion(info *debug.BuildInfo) string {
+	if info == nil {
+		return "open-secret-guard version unavailable"
+	}
+	version := info.Main.Version
+	if version == "" {
+		version = "unknown"
+	}
+	output := "open-secret-guard " + version
+	for _, setting := range info.Settings {
+		if setting.Key != "vcs.revision" || setting.Value == "" {
+			continue
+		}
+		revision := setting.Value
+		if len(revision) > 12 {
+			revision = revision[:12]
+		}
+		output += " (" + revision
+		for _, vcsSetting := range info.Settings {
+			if vcsSetting.Key == "vcs.modified" && vcsSetting.Value == "true" {
+				output += ", modified"
+				break
+			}
+		}
+		output += ")"
+		break
+	}
+	return output
 }
 
 func runAllowlistCheck(args []string) error {
@@ -1434,6 +1480,7 @@ Usage:
   open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-provider github,gitlab] [-branches main,develop] [-schedule '0 9 * * 1'] [-manual-trigger] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-exclude examples,testdata] [-exclude-file .open-secret-guard.exclude] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608] [-max-findings 20]
   open-secret-guard install-hook [-output .git/hooks/pre-commit] [-allowlist .open-secret-guard.allowlist] [-exclude examples,testdata] [-exclude-file .open-secret-guard.exclude] [-min-severity medium] [-fail-on-severity high] [-max-file-bytes 8388608]
   open-secret-guard rules [-format text|json|markdown|csv] [-min-severity low|medium|high|critical] [-provider github,gitlab]
+  open-secret-guard version
   open-secret-guard scan [path ...] [flags]
 
 Flags:

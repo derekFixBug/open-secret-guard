@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `version` to report the installed module version and source revision.
 - Added `scan -` to inspect piped standard input without creating a temporary file.
 - Added provider-level counts to `scan -format summary-json` for CI reporting.
 - Added `allowlist-check -max-expiry-days` to enforce a maximum lifetime for review exceptions.

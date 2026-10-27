@@ -29,6 +29,12 @@ go run ./cmd/open-secret-guard scan .
 
 ## Usage
 
+Show the installed version and, when available, its source revision:
+
+```sh
+open-secret-guard version
+```
+
 Scan the current directory:
 
 ```sh
