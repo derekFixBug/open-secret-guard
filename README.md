@@ -4,6 +4,8 @@
 
 It scans source files for common high-risk patterns such as GitHub, GitLab, and Azure DevOps tokens, Slack tokens and webhooks, Discord bot tokens, AI service tokens, JWT bearer tokens, AWS access key identifiers, npm and PyPI tokens, DigitalOcean and Shopify tokens, Terraform Cloud tokens, private key headers, database URLs with inline credentials, and suspicious secret assignments.
 
+Private key detection also covers encrypted PKCS#8 key headers.
+
 ## Why this exists
 
 Open source projects often need to document configuration without exposing real credentials. This tool helps maintainers:

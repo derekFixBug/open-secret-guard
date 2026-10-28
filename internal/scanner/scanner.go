@@ -196,7 +196,7 @@ var defaultRules = []Rule{
 		Provider: "generic",
 		Severity: "critical",
 		Message:  "Private keys should never be committed to source control.",
-		Pattern:  regexp.MustCompile(`-----BEGIN (RSA |DSA |EC |OPENSSH |PGP )?PRIVATE KEY-----`),
+		Pattern:  regexp.MustCompile(`-----BEGIN (RSA |DSA |EC |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY-----`),
 	},
 	{
 		ID:       "assigned-secret",

@@ -45,6 +45,16 @@ func TestScanFindsLikelySecrets(t *testing.T) {
 	}
 }
 
+func TestScanDetectsEncryptedPrivateKey(t *testing.T) {
+	findings := scanContent("key.pem", "-----BEGIN ENCRYPTED PRIVATE KEY-----\n")
+	if len(findings) != 1 || findings[0].RuleID != "private-key" || findings[0].Severity != "critical" {
+		t.Fatalf("expected critical private-key finding, got %#v", findings)
+	}
+	if findings := scanContent("public.pem", "-----BEGIN PUBLIC KEY-----\n"); len(findings) != 0 {
+		t.Fatalf("public key should not be reported: %#v", findings)
+	}
+}
+
 func TestScanReadsStandardInput(t *testing.T) {
 	content := "GITHUB_TOKEN=" + githubTokenFixture() + "\n"
 	report, err := scan(Options{Paths: []string{"-"}}, strings.NewReader(content))
