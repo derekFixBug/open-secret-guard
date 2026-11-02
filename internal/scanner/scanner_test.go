@@ -55,6 +55,20 @@ func TestScanDetectsEncryptedPrivateKey(t *testing.T) {
 	}
 }
 
+func TestScanDetectsSecureDatabaseURLsWithCredentials(t *testing.T) {
+	for _, scheme := range []string{"mongodb+srv", "rediss"} {
+		t.Run(scheme, func(t *testing.T) {
+			findings := scanContent("config.txt", scheme+"://demo:example@localhost/db")
+			if len(findings) != 1 || findings[0].RuleID != "database-url" {
+				t.Fatalf("expected database-url finding, got %#v", findings)
+			}
+			if findings := scanContent("config.txt", scheme+"://localhost/db"); len(findings) != 0 {
+				t.Fatalf("URL without credentials should not be reported: %#v", findings)
+			}
+		})
+	}
+}
+
 func TestScanReadsStandardInput(t *testing.T) {
 	content := "GITHUB_TOKEN=" + githubTokenFixture() + "\n"
 	report, err := scan(Options{Paths: []string{"-"}}, strings.NewReader(content))
