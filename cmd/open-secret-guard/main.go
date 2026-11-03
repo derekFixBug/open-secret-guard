@@ -54,7 +54,7 @@ func run(args []string) error {
 		return run1PasswordTemplate(args[1:])
 	case "rules":
 		return runRules(args[1:])
-	case "version":
+	case "version", "-version", "--version":
 		return runVersion(args[1:])
 	case "scan":
 		return runScan(args[1:])
@@ -1480,7 +1480,7 @@ Usage:
   open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-provider github,gitlab] [-branches main,develop] [-schedule '0 9 * * 1'] [-manual-trigger] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-exclude examples,testdata] [-exclude-file .open-secret-guard.exclude] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608] [-max-findings 20]
   open-secret-guard install-hook [-output .git/hooks/pre-commit] [-allowlist .open-secret-guard.allowlist] [-exclude examples,testdata] [-exclude-file .open-secret-guard.exclude] [-min-severity medium] [-fail-on-severity high] [-max-file-bytes 8388608]
   open-secret-guard rules [-format text|json|markdown|csv] [-min-severity low|medium|high|critical] [-provider github,gitlab]
-  open-secret-guard version
+  open-secret-guard version | --version | -version
   open-secret-guard scan [path ...] [flags]
 
 Flags:

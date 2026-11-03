@@ -138,6 +138,19 @@ func TestRunVersionRejectsArguments(t *testing.T) {
 	}
 }
 
+func TestRunVersionAliases(t *testing.T) {
+	for _, alias := range []string{"version", "-version", "--version"} {
+		t.Run(alias, func(t *testing.T) {
+			if err := run([]string{alias}); err != nil {
+				t.Fatalf("version alias failed: %v", err)
+			}
+			if err := run([]string{alias, "extra"}); err == nil {
+				t.Fatal("expected extra argument to be rejected")
+			}
+		})
+	}
+}
+
 func TestFormatVersionIncludesRevisionAndDirtyState(t *testing.T) {
 	info := &debug.BuildInfo{
 		Main: debug.Module{Version: "v1.2.3"},

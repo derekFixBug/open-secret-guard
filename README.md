@@ -38,6 +38,8 @@ Show the installed version and, when available, its source revision:
 open-secret-guard version
 ```
 
+The `--version` and `-version` flags are equivalent.
+
 Scan the current directory:
 
 ```sh
