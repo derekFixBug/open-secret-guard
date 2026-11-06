@@ -226,6 +226,22 @@ func TestRunAllowlistCheckRejectsInvalidMaximumExpiryWindow(t *testing.T) {
 	}
 }
 
+func TestRunAllowlistCheckLimitsEntries(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "allowlist.txt")
+	if err := os.WriteFile(path, []byte(scanner.Rules()[0].ID+" example.env 1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := runAllowlistCheck([]string{path, "-max-entries", "0"}); err == nil || !strings.Contains(err.Error(), "maximum is 0") {
+		t.Fatalf("expected entry limit failure, got %v", err)
+	}
+	if err := runAllowlistCheck([]string{path, "-max-entries", "1"}); err != nil {
+		t.Fatalf("expected limit to allow one entry: %v", err)
+	}
+	if err := runAllowlistCheck([]string{path, "-max-entries", "-2"}); err == nil {
+		t.Fatal("expected invalid limit to fail")
+	}
+}
+
 func TestRunAllowlistCheckEnforcesMaximumExpiryWindow(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "allowlist.txt")
 	ruleID := scanner.Rules()[0].ID

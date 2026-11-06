@@ -116,6 +116,7 @@ func runAllowlistCheck(args []string) error {
 	format := flags.String("format", "text", "output format: text or json")
 	expiresWithin := flags.Int("expires-within", -1, "fail when an allowlist entry expires within this many days")
 	maxExpiryDays := flags.Int("max-expiry-days", -1, "fail when an allowlist entry expires later than this many days from today")
+	maxEntries := flags.Int("max-entries", -1, "maximum number of allowlist entries; -1 disables the limit")
 	requireExpiry := flags.Bool("require-expiry", false, "fail when an allowlist entry has no expiry date")
 	requireLine := flags.Bool("require-line", false, "fail when an allowlist entry has no line number")
 	normalizedArgs := normalizeAllowlistCheckArgs(args)
@@ -130,6 +131,9 @@ func runAllowlistCheck(args []string) error {
 	}
 	if *maxExpiryDays < -1 {
 		return errors.New("max-expiry-days cannot be less than -1")
+	}
+	if *maxEntries < -1 {
+		return errors.New("max-entries cannot be less than -1")
 	}
 
 	paths := flags.Args()
@@ -156,13 +160,18 @@ func runAllowlistCheck(args []string) error {
 	}
 	switch *format {
 	case "text":
-		fmt.Printf("Allowlist is valid: %d entr%s.\n", len(entries), pluralSuffix(len(entries)))
+		if *maxEntries < 0 || len(entries) <= *maxEntries {
+			fmt.Printf("Allowlist is valid: %d entr%s.\n", len(entries), pluralSuffix(len(entries)))
+		}
 	case "json":
 		output, err := allowlistCheckReportJSON(entries, expiring, tooFar, missingExpiry, missingLine)
 		if err != nil {
 			return err
 		}
 		fmt.Print(output)
+	}
+	if *maxEntries >= 0 && len(entries) > *maxEntries {
+		return fmt.Errorf("allowlist has %d entries; maximum is %d", len(entries), *maxEntries)
 	}
 	if len(expiring) > 0 {
 		return fmt.Errorf("%d allowlist entr%s expire within %d day(s): %s", len(expiring), pluralSuffix(len(expiring)), *expiresWithin, formatExpiringAllowlistEntries(expiring))
@@ -735,7 +744,7 @@ func normalizeAllowlistCheckArgs(args []string) []string {
 		switch arg {
 		case "-require-expiry", "-require-line":
 			flagArgs = append(flagArgs, arg)
-		case "-format", "-expires-within", "-max-expiry-days":
+		case "-format", "-expires-within", "-max-expiry-days", "-max-entries":
 			flagArgs = append(flagArgs, arg)
 			if index+1 < len(args) {
 				index++
@@ -1473,7 +1482,7 @@ func printUsage() {
 	fmt.Println(`open-secret-guard
 
 Usage:
-  open-secret-guard allowlist-check <allowlist-file> [-format text|json] [-expires-within days] [-max-expiry-days days] [-require-expiry] [-require-line]
+  open-secret-guard allowlist-check <allowlist-file> [-format text|json] [-expires-within days] [-max-expiry-days days] [-max-entries count] [-require-expiry] [-require-line]
   open-secret-guard allowlist-suggest [path ...] [-format text|json] [flags]
   open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard 1password-template <env-example-file> -vault <vault> -item <item> [-output .env.1password] [-preserve-references]

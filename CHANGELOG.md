@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `allowlist-check -max-entries` to limit the number of review exceptions.
 - Added `--version` and `-version` aliases for the version command.
 - Added credential detection for MongoDB SRV and Redis TLS connection URLs.
 - Added detection of encrypted PKCS#8 private key headers.

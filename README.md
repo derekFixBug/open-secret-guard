@@ -187,6 +187,12 @@ open-secret-guard allowlist-check .open-secret-guard.allowlist -max-expiry-days 
 open-secret-guard allowlist-check .open-secret-guard.allowlist -format json -max-expiry-days 90
 ```
 
+Limit the total number of exceptions in CI (the JSON report still contains the entry count when the limit is exceeded):
+
+```sh
+open-secret-guard allowlist-check .open-secret-guard.allowlist -max-entries 20
+```
+
 Require every exception to have an expiry date. This is opt-in so existing allowlists remain valid by default; JSON output includes entries missing a date:
 
 ```sh
