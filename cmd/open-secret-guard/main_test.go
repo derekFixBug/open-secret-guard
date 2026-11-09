@@ -29,6 +29,25 @@ func TestNormalizeScanArgsAllowsFlagsAfterPaths(t *testing.T) {
 	}
 }
 
+func TestRunScanFailOnSkipped(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "input.bin")
+	if err := os.WriteFile(path, []byte{0, 1, 2}, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := runScan([]string{path, "-fail-on-skipped", "-format", "summary"}); err == nil || !strings.Contains(err.Error(), "1 file(s) skipped") {
+		t.Fatalf("expected skipped file failure, got %v", err)
+	}
+	if err := runScan([]string{path, "-format", "summary"}); err != nil {
+		t.Fatalf("default behavior should allow skipped files: %v", err)
+	}
+	if err := os.WriteFile(path, []byte("plain text\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := runScan([]string{path, "-fail-on-skipped", "-format", "summary"}); err != nil {
+		t.Fatalf("expected scanned file to pass: %v", err)
+	}
+}
+
 func TestLoadAllowlistReturnsNilInterfaceWhenUnset(t *testing.T) {
 	matcher, err := loadAllowlist("")
 	if err != nil {

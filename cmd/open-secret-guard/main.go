@@ -581,6 +581,7 @@ func runScan(args []string) error {
 
 	format := flags.String("format", "text", "output format: text, json, sarif, summary, summary-json, markdown, csv, github, junit, or gitlab")
 	failOnFindings := flags.Bool("fail-on-findings", false, "exit with a non-zero status when findings are detected")
+	failOnSkipped := flags.Bool("fail-on-skipped", false, "exit with a non-zero status when files are skipped")
 	failOnSeverity := flags.String("fail-on-severity", "", "minimum severity that exits non-zero: low, medium, high, or critical")
 	includeHidden := flags.Bool("include-hidden", false, "scan hidden files and directories")
 	exclude := flags.String("exclude", "", "comma-separated file or directory patterns to skip")
@@ -696,6 +697,9 @@ func runScan(args []string) error {
 	if *failOnSeverity != "" && hasFindingsAtOrAbove(failureReport, *failOnSeverity) {
 		return fmt.Errorf("findings at or above %s severity detected", *failOnSeverity)
 	}
+	if *failOnSkipped && report.SkippedFiles > 0 {
+		return fmt.Errorf("%d file(s) skipped", report.SkippedFiles)
+	}
 
 	return nil
 }
@@ -713,7 +717,7 @@ func normalizeScanArgs(args []string) []string {
 				index++
 				flagArgs = append(flagArgs, args[index])
 			}
-		case "-fail-on-findings", "-include-hidden":
+		case "-fail-on-findings", "-fail-on-skipped", "-include-hidden":
 			flagArgs = append(flagArgs, arg)
 		case "-exclude", "-exclude-file":
 			flagArgs = append(flagArgs, arg)
@@ -1495,6 +1499,7 @@ Usage:
 Flags:
   -format text|json|sarif|summary|summary-json|markdown|csv|github|junit|gitlab Output format
   -fail-on-findings       Exit non-zero when findings are detected
+  -fail-on-skipped        Exit non-zero when files are skipped
   -fail-on-severity level Exit non-zero for findings at or above low|medium|high|critical
   -min-severity level     Only report findings at or above low|medium|high|critical
   -only-rules ids         Only report findings for the given comma-separated rule IDs

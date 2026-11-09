@@ -82,6 +82,14 @@ Fail CI when findings are detected:
 open-secret-guard scan . -fail-on-findings
 ```
 
+Fail when the report counts skipped files:
+
+```sh
+open-secret-guard scan . -fail-on-skipped
+```
+
+This uses the report's skipped-file count, including excluded or hidden files, binary files and oversized files. Skipped directories and their contents are not counted, so this option does not guarantee that every file was scanned.
+
 Keep every finding in the report but only fail CI for high- or critical-severity findings:
 
 ```sh
