@@ -151,6 +151,16 @@ func TestRunRulesRejectsUnsupportedFormat(t *testing.T) {
 	}
 }
 
+func TestFilterRuleMetadataByID(t *testing.T) {
+	rules, err := filterRuleMetadata(scanner.Rules(), "github-token,private-key")
+	if err != nil || len(rules) != 2 || rules[0].ID != "github-token" || rules[1].ID != "private-key" {
+		t.Fatalf("unexpected filtered rules: %#v, %v", rules, err)
+	}
+	if _, err := filterRuleMetadata(scanner.Rules(), "unknown-rule"); err == nil {
+		t.Fatal("expected unknown rule to fail")
+	}
+}
+
 func TestRunVersionRejectsArguments(t *testing.T) {
 	if err := runVersion([]string{"extra"}); err == nil {
 		t.Fatal("expected version command to reject arguments")

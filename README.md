@@ -264,6 +264,12 @@ Only list rules for selected providers. Multiple providers are comma-separated:
 open-secret-guard rules -provider github,gitlab
 ```
 
+List specific rules by ID:
+
+```sh
+open-secret-guard rules -only-rules github-token,private-key
+```
+
 Print the rules as a Markdown table for project documentation:
 
 ```sh

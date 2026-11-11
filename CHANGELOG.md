@@ -6,6 +6,7 @@ All notable changes to `open-secret-guard` are tracked here. The project is earl
 
 ### Added
 
+- Added `rules -only-rules` to list selected rule IDs.
 - Added `scan -fail-on-skipped` to fail when the report counts skipped files.
 - Added `allowlist-check -max-entries` to limit the number of review exceptions.
 - Added `--version` and `-version` aliases for the version command.

@@ -338,6 +338,7 @@ func runRules(args []string) error {
 	format := flags.String("format", "text", "output format: text, json, markdown, or csv")
 	minSeverity := flags.String("min-severity", "", "minimum severity to list: low, medium, high, or critical")
 	provider := flags.String("provider", "", "comma-separated providers to list")
+	onlyRules := flags.String("only-rules", "", "comma-separated rule IDs to list")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -347,6 +348,10 @@ func runRules(args []string) error {
 
 	rules := scanner.Rules()
 	var err error
+	rules, err = filterRuleMetadata(rules, *onlyRules)
+	if err != nil {
+		return err
+	}
 	rules, err = filterRulesBySeverity(rules, *minSeverity)
 	if err != nil {
 		return err
@@ -923,9 +928,27 @@ func hasFindingsAtOrAbove(report scanner.Report, minSeverity string) bool {
 }
 
 func filterReportByRules(report scanner.Report, onlyRules string) (scanner.Report, error) {
+	allowedRules, err := selectedRuleIDs(onlyRules)
+	if err != nil {
+		return report, err
+	}
+	if len(allowedRules) == 0 {
+		return report, nil
+	}
+	filtered := report.Findings[:0]
+	for _, finding := range report.Findings {
+		if allowedRules[finding.RuleID] {
+			filtered = append(filtered, finding)
+		}
+	}
+	report.Findings = filtered
+	return report, nil
+}
+
+func selectedRuleIDs(onlyRules string) (map[string]bool, error) {
 	ruleIDs := splitCSV(onlyRules)
 	if len(ruleIDs) == 0 {
-		return report, nil
+		return nil, nil
 	}
 
 	knownRules := make(map[string]bool, len(scanner.Rules()))
@@ -936,19 +959,26 @@ func filterReportByRules(report scanner.Report, onlyRules string) (scanner.Repor
 	allowedRules := make(map[string]bool, len(ruleIDs))
 	for _, ruleID := range ruleIDs {
 		if !knownRules[ruleID] {
-			return report, fmt.Errorf("unknown rule ID %q", ruleID)
+			return nil, fmt.Errorf("unknown rule ID %q", ruleID)
 		}
 		allowedRules[ruleID] = true
 	}
 
-	filtered := report.Findings[:0]
-	for _, finding := range report.Findings {
-		if allowedRules[finding.RuleID] {
-			filtered = append(filtered, finding)
+	return allowedRules, nil
+}
+
+func filterRuleMetadata(rules []scanner.RuleMetadata, onlyRules string) ([]scanner.RuleMetadata, error) {
+	selected, err := selectedRuleIDs(onlyRules)
+	if err != nil || len(selected) == 0 {
+		return rules, err
+	}
+	filtered := rules[:0]
+	for _, rule := range rules {
+		if selected[rule.ID] {
+			filtered = append(filtered, rule)
 		}
 	}
-	report.Findings = filtered
-	return report, nil
+	return filtered, nil
 }
 
 func filterRulesBySeverity(rules []scanner.RuleMetadata, minSeverity string) ([]scanner.RuleMetadata, error) {
@@ -1492,7 +1522,7 @@ Usage:
   open-secret-guard 1password-template <env-example-file> -vault <vault> -item <item> [-output .env.1password] [-preserve-references]
   open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-provider github,gitlab] [-branches main,develop] [-schedule '0 9 * * 1'] [-manual-trigger] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-exclude examples,testdata] [-exclude-file .open-secret-guard.exclude] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608] [-max-findings 20]
   open-secret-guard install-hook [-output .git/hooks/pre-commit] [-allowlist .open-secret-guard.allowlist] [-exclude examples,testdata] [-exclude-file .open-secret-guard.exclude] [-min-severity medium] [-fail-on-severity high] [-max-file-bytes 8388608]
-  open-secret-guard rules [-format text|json|markdown|csv] [-min-severity low|medium|high|critical] [-provider github,gitlab]
+  open-secret-guard rules [-format text|json|markdown|csv] [-min-severity low|medium|high|critical] [-provider github,gitlab] [-only-rules ids]
   open-secret-guard version | --version | -version
   open-secret-guard scan [path ...] [flags]
 
