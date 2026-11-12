@@ -231,8 +231,8 @@ func TestRunAllowlistCheckRequiresOnePath(t *testing.T) {
 }
 
 func TestNormalizeAllowlistCheckArgsAllowsFlagAfterPath(t *testing.T) {
-	args := normalizeAllowlistCheckArgs([]string{".open-secret-guard.allowlist", "-expires-within", "30", "-max-expiry-days", "90", "-require-expiry", "-require-line", "-format", "json"})
-	want := []string{"-expires-within", "30", "-max-expiry-days", "90", "-require-expiry", "-require-line", "-format", "json", ".open-secret-guard.allowlist"}
+	args := normalizeAllowlistCheckArgs([]string{".open-secret-guard.allowlist", "-expires-within", "30", "-max-expiry-days", "90", "-require-expiry", "-require-line", "-require-exact-path", "-format", "json"})
+	want := []string{"-expires-within", "30", "-max-expiry-days", "90", "-require-expiry", "-require-line", "-require-exact-path", "-format", "json", ".open-secret-guard.allowlist"}
 	if len(args) != len(want) {
 		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
 	}
@@ -319,6 +319,7 @@ func TestAllowlistCheckReportJSONIncludesOnlyReviewableFields(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 	if err != nil {
 		t.Fatalf("build JSON report: %v", err)
@@ -338,7 +339,7 @@ func TestAllowlistCheckReportJSONIncludesOnlyReviewableFields(t *testing.T) {
 
 func TestAllowlistCheckReportJSONIncludesMissingExpiryEntries(t *testing.T) {
 	entry := allowlist.Entry{RuleID: "github-token", PathPattern: "config/example.env", Line: 4}
-	output, err := allowlistCheckReportJSON([]allowlist.Entry{entry}, nil, nil, []allowlist.Entry{entry}, nil)
+	output, err := allowlistCheckReportJSON([]allowlist.Entry{entry}, nil, nil, []allowlist.Entry{entry}, nil, nil)
 	if err != nil {
 		t.Fatalf("build JSON report: %v", err)
 	}
@@ -360,7 +361,7 @@ func TestAllowlistCheckReportJSONIncludesLongLivedEntries(t *testing.T) {
 		PathPattern: "config/example.env",
 		ExpiresAt:   time.Date(2099, time.December, 31, 0, 0, 0, 0, time.UTC),
 	}
-	output, err := allowlistCheckReportJSON([]allowlist.Entry{entry}, nil, []allowlist.Entry{entry}, nil, nil)
+	output, err := allowlistCheckReportJSON([]allowlist.Entry{entry}, nil, []allowlist.Entry{entry}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("build JSON report: %v", err)
 	}
@@ -384,6 +385,23 @@ func TestRunAllowlistCheckCanRequireLineNumber(t *testing.T) {
 	}
 }
 
+func TestRunAllowlistCheckCanRequireExactPaths(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "allowlist.txt")
+	ruleID := scanner.Rules()[0].ID
+	if err := os.WriteFile(path, []byte(ruleID+" config/*.env 3\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := runAllowlistCheck([]string{"-require-exact-path", path}); err == nil || !strings.Contains(err.Error(), "exact paths are required") {
+		t.Fatalf("expected broad path to fail, got %v", err)
+	}
+	if err := os.WriteFile(path, []byte(ruleID+" config/example.env 3\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := runAllowlistCheck([]string{"-require-exact-path", path}); err != nil {
+		t.Fatalf("exact path should pass: %v", err)
+	}
+}
+
 func TestRunAllowlistCheckAcceptsLineNumberWhenRequired(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "allowlist.txt")
 	ruleID := scanner.Rules()[0].ID
@@ -397,7 +415,7 @@ func TestRunAllowlistCheckAcceptsLineNumberWhenRequired(t *testing.T) {
 
 func TestAllowlistCheckReportJSONIncludesMissingLineEntries(t *testing.T) {
 	entry := allowlist.Entry{RuleID: "github-token", PathPattern: "config/example.env"}
-	output, err := allowlistCheckReportJSON([]allowlist.Entry{entry}, nil, nil, nil, []allowlist.Entry{entry})
+	output, err := allowlistCheckReportJSON([]allowlist.Entry{entry}, nil, nil, nil, []allowlist.Entry{entry}, nil)
 	if err != nil {
 		t.Fatalf("build JSON report: %v", err)
 	}
@@ -407,6 +425,21 @@ func TestAllowlistCheckReportJSONIncludesMissingLineEntries(t *testing.T) {
 	}
 	if len(report.MissingLine) != 1 || report.MissingLine[0].PathPattern != entry.PathPattern {
 		t.Fatalf("expected missing line entry in JSON report, got %#v", report)
+	}
+}
+
+func TestAllowlistCheckReportJSONIncludesBroadPaths(t *testing.T) {
+	entry := allowlist.Entry{RuleID: "github-token", PathPattern: "config/*.env"}
+	output, err := allowlistCheckReportJSON([]allowlist.Entry{entry}, nil, nil, nil, nil, []allowlist.Entry{entry})
+	if err != nil {
+		t.Fatalf("build JSON report: %v", err)
+	}
+	var report allowlistCheckReport
+	if err := json.Unmarshal([]byte(output), &report); err != nil {
+		t.Fatalf("decode JSON report: %v\n%s", err, output)
+	}
+	if len(report.BroadPaths) != 1 || report.BroadPaths[0].PathPattern != entry.PathPattern {
+		t.Fatalf("expected broad path entry in JSON report, got %#v", report)
 	}
 }
 

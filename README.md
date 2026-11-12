@@ -215,6 +215,13 @@ open-secret-guard allowlist-check .open-secret-guard.allowlist -require-line
 open-secret-guard allowlist-check .open-secret-guard.allowlist -format json -require-line
 ```
 
+Require exact file paths instead of glob patterns to keep exceptions narrowly scoped. JSON output lists entries using path glob characters:
+
+```sh
+open-secret-guard allowlist-check .open-secret-guard.allowlist -require-exact-path
+open-secret-guard allowlist-check .open-secret-guard.allowlist -format json -require-exact-path
+```
+
 Generate reviewed allowlist candidates from current findings. This command never changes a file and never prints matched values:
 
 ```sh

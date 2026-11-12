@@ -119,6 +119,7 @@ func runAllowlistCheck(args []string) error {
 	maxEntries := flags.Int("max-entries", -1, "maximum number of allowlist entries; -1 disables the limit")
 	requireExpiry := flags.Bool("require-expiry", false, "fail when an allowlist entry has no expiry date")
 	requireLine := flags.Bool("require-line", false, "fail when an allowlist entry has no line number")
+	requireExactPath := flags.Bool("require-exact-path", false, "fail when an allowlist entry uses path glob characters")
 	normalizedArgs := normalizeAllowlistCheckArgs(args)
 	if err := flags.Parse(normalizedArgs); err != nil {
 		return err
@@ -158,13 +159,17 @@ func runAllowlistCheck(args []string) error {
 	if *requireLine {
 		missingLine = allowlistEntriesWithoutLine(entries)
 	}
+	var broadPaths []allowlist.Entry
+	if *requireExactPath {
+		broadPaths = allowlistEntriesWithBroadPath(entries)
+	}
 	switch *format {
 	case "text":
 		if *maxEntries < 0 || len(entries) <= *maxEntries {
 			fmt.Printf("Allowlist is valid: %d entr%s.\n", len(entries), pluralSuffix(len(entries)))
 		}
 	case "json":
-		output, err := allowlistCheckReportJSON(entries, expiring, tooFar, missingExpiry, missingLine)
+		output, err := allowlistCheckReportJSON(entries, expiring, tooFar, missingExpiry, missingLine, broadPaths)
 		if err != nil {
 			return err
 		}
@@ -185,6 +190,9 @@ func runAllowlistCheck(args []string) error {
 	if len(missingLine) > 0 {
 		return fmt.Errorf("line number is required for %d allowlist entr%s", len(missingLine), pluralSuffix(len(missingLine)))
 	}
+	if len(broadPaths) > 0 {
+		return fmt.Errorf("exact paths are required for %d allowlist entr%s", len(broadPaths), pluralSuffix(len(broadPaths)))
+	}
 
 	return nil
 }
@@ -195,6 +203,7 @@ type allowlistCheckReport struct {
 	ExpiresLater  []allowlist.Entry        `json:"expires_later_than,omitempty"`
 	MissingExpiry []allowlistCheckIssueRow `json:"missing_expiry,omitempty"`
 	MissingLine   []allowlistCheckIssueRow `json:"missing_line,omitempty"`
+	BroadPaths    []allowlistCheckIssueRow `json:"broad_paths,omitempty"`
 }
 
 type allowlistCheckIssueRow struct {
@@ -203,7 +212,7 @@ type allowlistCheckIssueRow struct {
 	Line        int    `json:"line,omitempty"`
 }
 
-func allowlistCheckReportJSON(entries []allowlist.Entry, expiring, expiresLater, missingExpiry, missingLine []allowlist.Entry) (string, error) {
+func allowlistCheckReportJSON(entries []allowlist.Entry, expiring, expiresLater, missingExpiry, missingLine, broadPaths []allowlist.Entry) (string, error) {
 	if expiring == nil {
 		expiring = []allowlist.Entry{}
 	}
@@ -215,11 +224,22 @@ func allowlistCheckReportJSON(entries []allowlist.Entry, expiring, expiresLater,
 		ExpiresLater:  expiresLater,
 		MissingExpiry: missingExpiryRows,
 		MissingLine:   missingLineRows,
+		BroadPaths:    allowlistCheckRows(broadPaths),
 	}, "", "  ")
 	if err != nil {
 		return "", err
 	}
 	return string(output) + "\n", nil
+}
+
+func allowlistEntriesWithBroadPath(entries []allowlist.Entry) []allowlist.Entry {
+	var broad []allowlist.Entry
+	for _, entry := range entries {
+		if strings.ContainsAny(entry.PathPattern, "*?[") {
+			broad = append(broad, entry)
+		}
+	}
+	return broad
 }
 
 func allowlistCheckRows(entries []allowlist.Entry) []allowlistCheckIssueRow {
@@ -751,7 +771,7 @@ func normalizeAllowlistCheckArgs(args []string) []string {
 	for index := 0; index < len(args); index++ {
 		arg := args[index]
 		switch arg {
-		case "-require-expiry", "-require-line":
+		case "-require-expiry", "-require-line", "-require-exact-path":
 			flagArgs = append(flagArgs, arg)
 		case "-format", "-expires-within", "-max-expiry-days", "-max-entries":
 			flagArgs = append(flagArgs, arg)
@@ -1516,7 +1536,7 @@ func printUsage() {
 	fmt.Println(`open-secret-guard
 
 Usage:
-  open-secret-guard allowlist-check <allowlist-file> [-format text|json] [-expires-within days] [-max-expiry-days days] [-max-entries count] [-require-expiry] [-require-line]
+  open-secret-guard allowlist-check <allowlist-file> [-format text|json] [-expires-within days] [-max-expiry-days days] [-max-entries count] [-require-expiry] [-require-line] [-require-exact-path]
   open-secret-guard allowlist-suggest [path ...] [-format text|json] [flags]
   open-secret-guard env-example <env-file> [-output .env.example]
   open-secret-guard 1password-template <env-example-file> -vault <vault> -item <item> [-output .env.1password] [-preserve-references]
