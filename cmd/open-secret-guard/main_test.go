@@ -161,6 +161,16 @@ func TestFilterRuleMetadataByID(t *testing.T) {
 	}
 }
 
+func TestSearchRuleMetadataMatchesRuleFieldsCaseInsensitively(t *testing.T) {
+	rules := searchRuleMetadata(scanner.Rules(), "AWS ACCESS KEY")
+	if len(rules) != 1 || rules[0].ID != "aws-access-key" {
+		t.Fatalf("unexpected search results: %#v", rules)
+	}
+	if got := searchRuleMetadata(rules, "   "); len(got) != len(rules) {
+		t.Fatalf("empty search should leave rules unchanged: %#v", got)
+	}
+}
+
 func TestRunVersionRejectsArguments(t *testing.T) {
 	if err := runVersion([]string{"extra"}); err == nil {
 		t.Fatal("expected version command to reject arguments")

@@ -277,6 +277,13 @@ List specific rules by ID:
 open-secret-guard rules -only-rules github-token,private-key
 ```
 
+Search rule IDs, providers, severity levels, and descriptions without case sensitivity. Search can be combined with the other rule filters:
+
+```sh
+open-secret-guard rules -search "AWS access key"
+open-secret-guard rules -provider github -search token
+```
+
 Print the rules as a Markdown table for project documentation:
 
 ```sh
