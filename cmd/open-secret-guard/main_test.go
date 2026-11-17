@@ -82,9 +82,9 @@ func TestLoadExcludePatternsReturnsNilWhenUnset(t *testing.T) {
 }
 
 func TestNormalizeEnvExampleArgsAllowsOutputAfterPath(t *testing.T) {
-	args := normalizeEnvExampleArgs([]string{".env", "-output", ".env.example"})
+	args := normalizeEnvExampleArgs([]string{".env", "-output", ".env.example", "-placeholder", "CHANGE_ME"})
 
-	want := []string{"-output", ".env.example", ".env"}
+	want := []string{"-output", ".env.example", "-placeholder", "CHANGE_ME", ".env"}
 	if len(args) != len(want) {
 		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
 	}
@@ -93,6 +93,12 @@ func TestNormalizeEnvExampleArgsAllowsOutputAfterPath(t *testing.T) {
 		if args[index] != want[index] {
 			t.Fatalf("arg %d: expected %q, got %q", index, want[index], args[index])
 		}
+	}
+}
+
+func TestRunEnvExampleRejectsUnsafePlaceholder(t *testing.T) {
+	if err := runEnvExample([]string{"-placeholder", "NOT SAFE", "example.env"}); err == nil || !strings.Contains(err.Error(), "placeholder must contain only") {
+		t.Fatalf("expected unsafe placeholder to fail, got %v", err)
 	}
 }
 

@@ -531,9 +531,13 @@ func runEnvExample(args []string) error {
 	flags.SetOutput(os.Stderr)
 
 	outputPath := flags.String("output", "", "path to write the generated .env.example")
+	placeholder := flags.String("placeholder", "", "safe placeholder value for every generated assignment")
 	normalizedArgs := normalizeEnvExampleArgs(args)
 	if err := flags.Parse(normalizedArgs); err != nil {
 		return err
+	}
+	if *placeholder != "" && !validEnvPlaceholder(*placeholder) {
+		return errors.New("placeholder must contain only letters, digits, dot, underscore, or hyphen")
 	}
 
 	paths := flags.Args()
@@ -551,7 +555,7 @@ func runEnvExample(args []string) error {
 		return err
 	}
 
-	generated := envexample.Generate(string(content))
+	generated := envexample.GenerateWithPlaceholder(string(content), *placeholder)
 	if *outputPath == "" {
 		fmt.Print(generated)
 		return nil
@@ -796,7 +800,7 @@ func normalizeEnvExampleArgs(args []string) []string {
 	for index := 0; index < len(args); index++ {
 		arg := args[index]
 		switch arg {
-		case "-output":
+		case "-output", "-placeholder":
 			flagArgs = append(flagArgs, arg)
 			if index+1 < len(args) {
 				index++
@@ -808,6 +812,16 @@ func normalizeEnvExampleArgs(args []string) []string {
 	}
 
 	return append(flagArgs, pathArgs...)
+}
+
+func validEnvPlaceholder(value string) bool {
+	for _, char := range value {
+		if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') || char == '.' || char == '_' || char == '-' {
+			continue
+		}
+		return false
+	}
+	return value != ""
 }
 
 func normalize1PasswordTemplateArgs(args []string) []string {
@@ -1559,7 +1573,7 @@ func printUsage() {
 Usage:
   open-secret-guard allowlist-check <allowlist-file> [-format text|json] [-expires-within days] [-max-expiry-days days] [-max-entries count] [-require-expiry] [-require-line] [-require-exact-path]
   open-secret-guard allowlist-suggest [path ...] [-format text|json] [flags]
-  open-secret-guard env-example <env-file> [-output .env.example]
+  open-secret-guard env-example <env-file> [-output .env.example] [-placeholder CHANGE_ME]
   open-secret-guard 1password-template <env-example-file> -vault <vault> -item <item> [-output .env.1password] [-preserve-references]
   open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-provider github,gitlab] [-branches main,develop] [-schedule '0 9 * * 1'] [-manual-trigger] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-exclude examples,testdata] [-exclude-file .open-secret-guard.exclude] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608] [-max-findings 20]
   open-secret-guard install-hook [-output .git/hooks/pre-commit] [-allowlist .open-secret-guard.allowlist] [-exclude examples,testdata] [-exclude-file .open-secret-guard.exclude] [-min-severity medium] [-fail-on-severity high] [-max-file-bytes 8388608]

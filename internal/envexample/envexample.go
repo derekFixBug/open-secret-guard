@@ -6,10 +6,14 @@ import (
 )
 
 func Generate(content string) string {
+	return GenerateWithPlaceholder(content, "")
+}
+
+func GenerateWithPlaceholder(content string, placeholder string) string {
 	var builder strings.Builder
 	scanner := bufio.NewScanner(strings.NewReader(content))
 	for scanner.Scan() {
-		builder.WriteString(SanitizeLine(scanner.Text()))
+		builder.WriteString(SanitizeLineWithPlaceholder(scanner.Text(), placeholder))
 		builder.WriteByte('\n')
 	}
 
@@ -20,6 +24,10 @@ func Generate(content string) string {
 }
 
 func SanitizeLine(line string) string {
+	return SanitizeLineWithPlaceholder(line, "")
+}
+
+func SanitizeLineWithPlaceholder(line string, placeholder string) string {
 	trimmed := strings.TrimSpace(line)
 	if trimmed == "" || strings.HasPrefix(trimmed, "#") {
 		return line
@@ -41,6 +49,13 @@ func SanitizeLine(line string) string {
 	}
 
 	_, comment := splitValueComment(assignment[separator+1:])
+	if placeholder != "" {
+		result := prefix + key + "=" + placeholder
+		if comment != "" {
+			return result + " " + comment
+		}
+		return result
+	}
 	if comment != "" {
 		return prefix + key + "= " + comment
 	}

@@ -25,6 +25,26 @@ func TestGenerateClearsValuesAndKeepsComments(t *testing.T) {
 	}
 }
 
+func TestGenerateWithPlaceholderFillsAssignmentsAndKeepsComments(t *testing.T) {
+	input := stringsJoin(
+		"# app settings",
+		"API_KEY=secret-value # rotate me",
+		"export DATABASE_URL=",
+		"EMPTY=",
+		"PLAIN_LINE",
+	)
+	want := stringsJoin(
+		"# app settings",
+		"API_KEY=CHANGE_ME # rotate me",
+		"export DATABASE_URL=CHANGE_ME",
+		"EMPTY=CHANGE_ME",
+		"PLAIN_LINE",
+	)
+	if got := GenerateWithPlaceholder(input, "CHANGE_ME"); got != want {
+		t.Fatalf("unexpected generated env example:\nwant:\n%s\n\ngot:\n%s", want, got)
+	}
+}
+
 func TestSanitizeLineKeepsHashInsideQuotes(t *testing.T) {
 	got := SanitizeLine(`PASSWORD="abc#123" # keep this comment`)
 	want := "PASSWORD= # keep this comment"

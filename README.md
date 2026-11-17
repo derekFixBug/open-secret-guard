@@ -332,6 +332,12 @@ Generate a safe `.env.example` from a local `.env` file:
 open-secret-guard env-example .env -output .env.example
 ```
 
+Fill generated assignments with a consistent placeholder instead of leaving values blank. Placeholder values may contain only letters, numbers, dots, underscores, and hyphens:
+
+```sh
+open-secret-guard env-example .env -output .env.example -placeholder CHANGE_ME
+```
+
 Generate a 1Password CLI template from `.env.example`. It contains only `op://` secret references, not source values:
 
 ```sh
