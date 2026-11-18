@@ -60,6 +60,13 @@ func TestGitHubActionsUsesFailureSeverityWithoutFilteringReport(t *testing.T) {
 	}
 }
 
+func TestGitHubActionsCanFailWhenFilesAreSkipped(t *testing.T) {
+	content := GitHubActions(GitHubActionsOptions{FailOnSkipped: true})
+	if !strings.Contains(content, "scan . -fail-on-findings -fail-on-skipped") {
+		t.Fatalf("expected generated scan to fail when files are skipped:\n%s", content)
+	}
+}
+
 func TestGitHubActionsCanUploadSARIF(t *testing.T) {
 	content := GitHubActions(GitHubActionsOptions{
 		SARIFOutput: "reports/open-secret-guard.sarif",

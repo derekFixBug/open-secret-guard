@@ -21,6 +21,7 @@ type GitHubActionsOptions struct {
 	Branches       string
 	Schedule       string
 	ManualTrigger  bool
+	FailOnSkipped  bool
 	MaxFileBytes   int
 	MaxFindings    int
 }
@@ -66,6 +67,9 @@ func GitHubActions(options GitHubActionsOptions) string {
 		scanArgs = append(scanArgs, "-fail-on-severity", shellQuote(options.FailOnSeverity))
 	} else {
 		scanArgs = append(scanArgs, "-fail-on-findings")
+	}
+	if options.FailOnSkipped {
+		scanArgs = append(scanArgs, "-fail-on-skipped")
 	}
 
 	workflow := "name: Secret guard\n\n" + workflowTriggers(splitCSV(options.TriggerPaths), splitCSV(options.Branches), options.Schedule, options.ManualTrigger)

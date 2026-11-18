@@ -240,6 +240,20 @@ func TestRunGitHubActionRejectsUnsupportedFailureSeverity(t *testing.T) {
 	}
 }
 
+func TestRunGitHubActionCanFailWhenFilesAreSkipped(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "workflow.yml")
+	if err := runGitHubAction([]string{"-fail-on-skipped", "-output", outputPath}); err != nil {
+		t.Fatalf("generate workflow: %v", err)
+	}
+	content, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatalf("read workflow: %v", err)
+	}
+	if !strings.Contains(string(content), "-fail-on-findings -fail-on-skipped") {
+		t.Fatalf("expected fail-on-skipped in generated workflow:\n%s", content)
+	}
+}
+
 func TestRunAllowlistCheckRequiresOnePath(t *testing.T) {
 	if err := runAllowlistCheck(nil); err == nil {
 		t.Fatal("expected allowlist-check to require a path")

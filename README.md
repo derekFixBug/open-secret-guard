@@ -381,6 +381,12 @@ Generate a workflow that reports every finding but fails only for high or critic
 open-secret-guard github-action -fail-on-severity high -output .github/workflows/secret-guard.yml
 ```
 
+Make CI fail if any files are skipped because they are too large or cannot be scanned, so a partial scan does not pass silently:
+
+```sh
+open-secret-guard github-action -fail-on-skipped -output .github/workflows/secret-guard.yml
+```
+
 Pass selected providers through to the workflow scan step when the repository only needs specific credential families:
 
 ```sh
