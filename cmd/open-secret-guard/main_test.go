@@ -125,9 +125,9 @@ func TestRun1PasswordTemplateRequiresVaultAndItem(t *testing.T) {
 }
 
 func TestNormalizeInstallHookArgsAllowsFlagsInAnyOrder(t *testing.T) {
-	args := normalizeInstallHookArgs([]string{"-allowlist", ".open-secret-guard.allowlist", "-output", ".git/hooks/pre-commit", "-min-severity", "high"})
+	args := normalizeInstallHookArgs([]string{"-allowlist", ".open-secret-guard.allowlist", "-output", ".git/hooks/pre-commit", "-min-severity", "high", "-fail-on-skipped"})
 
-	want := []string{"-allowlist", ".open-secret-guard.allowlist", "-output", ".git/hooks/pre-commit", "-min-severity", "high"}
+	want := []string{"-allowlist", ".open-secret-guard.allowlist", "-output", ".git/hooks/pre-commit", "-min-severity", "high", "-fail-on-skipped"}
 	if len(args) != len(want) {
 		t.Fatalf("expected %d args, got %d: %#v", len(want), len(args), args)
 	}
@@ -136,6 +136,20 @@ func TestNormalizeInstallHookArgsAllowsFlagsInAnyOrder(t *testing.T) {
 		if args[index] != want[index] {
 			t.Fatalf("arg %d: expected %q, got %q", index, want[index], args[index])
 		}
+	}
+}
+
+func TestRunInstallHookCanFailWhenFilesAreSkipped(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "pre-commit")
+	if err := runInstallHook([]string{"-fail-on-skipped", "-output", outputPath}); err != nil {
+		t.Fatalf("generate hook: %v", err)
+	}
+	content, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatalf("read hook: %v", err)
+	}
+	if !strings.Contains(string(content), "scan . -fail-on-findings -fail-on-skipped") {
+		t.Fatalf("expected fail-on-skipped in generated hook:\n%s", content)
 	}
 }
 

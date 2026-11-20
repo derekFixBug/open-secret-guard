@@ -12,6 +12,7 @@ type Options struct {
 	ExcludeFile    string
 	MinSeverity    string
 	FailOnSeverity string
+	FailOnSkipped  bool
 	MaxFileBytes   int
 }
 
@@ -41,6 +42,9 @@ func PreCommit(options Options) string {
 		args = append(args, "-fail-on-severity", shellQuote(options.FailOnSeverity))
 	} else {
 		args = append(args, "-fail-on-findings")
+	}
+	if options.FailOnSkipped {
+		args = append(args, "-fail-on-skipped")
 	}
 
 	return "#!/bin/sh\n" +

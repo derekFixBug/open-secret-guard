@@ -369,6 +369,12 @@ Configure the pre-commit scan to share exclusions with CI, scan larger files, an
 open-secret-guard install-hook -exclude-file .open-secret-guard.exclude -max-file-bytes 8388608 -fail-on-severity high -output .git/hooks/pre-commit
 ```
 
+Fail the commit if the hook skips any files, such as files above the configured size limit:
+
+```sh
+open-secret-guard install-hook -max-file-bytes 8388608 -fail-on-skipped -output .git/hooks/pre-commit
+```
+
 Generate a minimal GitHub Actions workflow:
 
 ```sh

@@ -487,6 +487,7 @@ func runInstallHook(args []string) error {
 	excludeFile := flags.String("exclude-file", "", "path to newline-separated exclusion patterns used by the hook scan")
 	minSeverity := flags.String("min-severity", "", "minimum severity used inside the generated hook")
 	failOnSeverity := flags.String("fail-on-severity", "", "minimum severity that fails the hook scan: low, medium, high, or critical")
+	failOnSkipped := flags.Bool("fail-on-skipped", false, "fail the hook scan when files are skipped")
 	maxFileBytes := flags.Int("max-file-bytes", 0, "maximum file size scanned by the hook; 0 uses the default")
 
 	normalizedArgs := normalizeInstallHookArgs(args)
@@ -518,6 +519,7 @@ func runInstallHook(args []string) error {
 		ExcludeFile:    *excludeFile,
 		MinSeverity:    *minSeverity,
 		FailOnSeverity: *failOnSeverity,
+		FailOnSkipped:  *failOnSkipped,
 		MaxFileBytes:   *maxFileBytes,
 	})
 	if *outputPath == "" {
@@ -862,6 +864,8 @@ func normalizeInstallHookArgs(args []string) []string {
 				index++
 				flagArgs = append(flagArgs, args[index])
 			}
+		case "-fail-on-skipped":
+			flagArgs = append(flagArgs, arg)
 		default:
 			pathArgs = append(pathArgs, arg)
 		}
@@ -1578,7 +1582,7 @@ Usage:
   open-secret-guard env-example <env-file> [-output .env.example] [-placeholder CHANGE_ME]
   open-secret-guard 1password-template <env-example-file> -vault <vault> -item <item> [-output .env.1password] [-preserve-references]
   open-secret-guard github-action [-output .github/workflows/secret-guard.yml] [-provider github,gitlab] [-branches main,develop] [-schedule '0 9 * * 1'] [-manual-trigger] [-fail-on-skipped] [-sarif-output open-secret-guard.sarif] [-scan-paths cmd,internal] [-exclude examples,testdata] [-exclude-file .open-secret-guard.exclude] [-trigger-paths cmd/**,internal/**] [-max-file-bytes 8388608] [-max-findings 20]
-  open-secret-guard install-hook [-output .git/hooks/pre-commit] [-allowlist .open-secret-guard.allowlist] [-exclude examples,testdata] [-exclude-file .open-secret-guard.exclude] [-min-severity medium] [-fail-on-severity high] [-max-file-bytes 8388608]
+  open-secret-guard install-hook [-output .git/hooks/pre-commit] [-allowlist .open-secret-guard.allowlist] [-exclude examples,testdata] [-exclude-file .open-secret-guard.exclude] [-min-severity medium] [-fail-on-severity high] [-fail-on-skipped] [-max-file-bytes 8388608]
   open-secret-guard rules [-format text|json|markdown|csv] [-min-severity low|medium|high|critical] [-provider github,gitlab] [-only-rules ids] [-search query]
   open-secret-guard version | --version | -version
   open-secret-guard scan [path ...] [flags]

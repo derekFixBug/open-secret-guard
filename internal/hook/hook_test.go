@@ -27,6 +27,11 @@ func TestPreCommitIncludesMinimumSeverity(t *testing.T) {
 	assertContains(t, got, "open-secret-guard scan . -min-severity 'high' -fail-on-findings")
 }
 
+func TestPreCommitCanFailWhenFilesAreSkipped(t *testing.T) {
+	got := PreCommit(Options{FailOnSkipped: true})
+	assertContains(t, got, "scan . -fail-on-findings -fail-on-skipped")
+}
+
 func assertContains(t *testing.T, value string, substring string) {
 	t.Helper()
 	if !stringsContains(value, substring) {
