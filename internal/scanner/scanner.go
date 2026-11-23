@@ -192,6 +192,13 @@ var defaultRules = []Rule{
 		Pattern:  regexp.MustCompile(`\beyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b`),
 	},
 	{
+		ID:       "basic-auth-credentials",
+		Provider: "generic",
+		Severity: "medium",
+		Message:  "HTTP Basic authentication credentials should not be committed.",
+		Pattern:  regexp.MustCompile(`(?i)\bAuthorization\s*:\s*Basic\s+[A-Za-z0-9+/]{16,}={0,2}`),
+	},
+	{
 		ID:       "private-key",
 		Provider: "generic",
 		Severity: "critical",

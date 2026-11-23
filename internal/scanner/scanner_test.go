@@ -69,6 +69,16 @@ func TestScanDetectsSecureDatabaseURLsWithCredentials(t *testing.T) {
 	}
 }
 
+func TestScanDetectsBasicAuthCredentialsOnlyInAuthorizationHeaders(t *testing.T) {
+	findings := scanContent("request.txt", "Authorization: Basic dXNlcjpwYXNzd29yZA==\n")
+	if len(findings) != 1 || findings[0].RuleID != "basic-auth-credentials" || findings[0].Severity != "medium" {
+		t.Fatalf("expected basic-auth-credentials finding, got %#v", findings)
+	}
+	if findings := scanContent("docs.md", "Example base64 payload: dXNlcjpwYXNzd29yZA==\nAuthorization: Basic <base64-credentials>\n"); len(findings) != 0 {
+		t.Fatalf("placeholder text and standalone base64 should not be reported: %#v", findings)
+	}
+}
+
 func TestScanReadsStandardInput(t *testing.T) {
 	content := "GITHUB_TOKEN=" + githubTokenFixture() + "\n"
 	report, err := scan(Options{Paths: []string{"-"}}, strings.NewReader(content))

@@ -2,7 +2,7 @@
 
 `open-secret-guard` is a small local CLI for open source maintainers who want to catch accidental secret leaks before they reach a public repository.
 
-It scans source files for common high-risk patterns such as GitHub, GitLab, and Azure DevOps tokens, Slack tokens and webhooks, Discord bot tokens, AI service tokens, JWT bearer tokens, AWS access key identifiers, npm and PyPI tokens, DigitalOcean and Shopify tokens, Terraform Cloud tokens, private key headers, database URLs with inline credentials, and suspicious secret assignments.
+It scans source files for common high-risk patterns such as GitHub, GitLab, and Azure DevOps tokens, Slack tokens and webhooks, Discord bot tokens, AI service tokens, JWT bearer tokens, HTTP Basic authorization credentials, AWS access key identifiers, npm and PyPI tokens, DigitalOcean and Shopify tokens, Terraform Cloud tokens, private key headers, database URLs with inline credentials, and suspicious secret assignments.
 
 Private key detection also covers encrypted PKCS#8 key headers.
 Database URL detection includes MongoDB SRV and Redis TLS connection strings with inline credentials.
