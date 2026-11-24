@@ -113,7 +113,7 @@ func runAllowlistCheck(args []string) error {
 	flags := flag.NewFlagSet("allowlist-check", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 
-	format := flags.String("format", "text", "output format: text or json")
+	format := flags.String("format", "text", "output format: text, json, or markdown")
 	expiresWithin := flags.Int("expires-within", -1, "fail when an allowlist entry expires within this many days")
 	maxExpiryDays := flags.Int("max-expiry-days", -1, "fail when an allowlist entry expires later than this many days from today")
 	maxEntries := flags.Int("max-entries", -1, "maximum number of allowlist entries; -1 disables the limit")
@@ -124,7 +124,7 @@ func runAllowlistCheck(args []string) error {
 	if err := flags.Parse(normalizedArgs); err != nil {
 		return err
 	}
-	if *format != "text" && *format != "json" {
+	if *format != "text" && *format != "json" && *format != "markdown" {
 		return fmt.Errorf("unsupported format %q", *format)
 	}
 	if *expiresWithin < -1 {
@@ -174,6 +174,8 @@ func runAllowlistCheck(args []string) error {
 			return err
 		}
 		fmt.Print(output)
+	case "markdown":
+		fmt.Print(allowlistMarkdown(entries))
 	}
 	if *maxEntries >= 0 && len(entries) > *maxEntries {
 		return fmt.Errorf("allowlist has %d entries; maximum is %d", len(entries), *maxEntries)
@@ -252,6 +254,24 @@ func allowlistCheckRows(entries []allowlist.Entry) []allowlistCheckIssueRow {
 		})
 	}
 	return rows
+}
+
+func allowlistMarkdown(entries []allowlist.Entry) string {
+	var builder strings.Builder
+	builder.WriteString("| Rule | Path | Line | Expires |\n| --- | --- | ---: | --- |\n")
+	for _, entry := range entries {
+		line := "-"
+		if entry.Line > 0 {
+			line = strconv.Itoa(entry.Line)
+		}
+		expires := "-"
+		if !entry.ExpiresAt.IsZero() {
+			expires = entry.ExpiresAt.Format(time.DateOnly)
+		}
+		path := strings.ReplaceAll(entry.PathPattern, "|", "\\|")
+		builder.WriteString(fmt.Sprintf("| %s | %s | %s | %s |\n", entry.RuleID, path, line, expires))
+	}
+	return builder.String()
 }
 
 func allowlistEntriesWithoutExpiry(entries []allowlist.Entry) []allowlist.Entry {
@@ -1577,7 +1597,7 @@ func printUsage() {
 	fmt.Println(`open-secret-guard
 
 Usage:
-  open-secret-guard allowlist-check <allowlist-file> [-format text|json] [-expires-within days] [-max-expiry-days days] [-max-entries count] [-require-expiry] [-require-line] [-require-exact-path]
+  open-secret-guard allowlist-check <allowlist-file> [-format text|json|markdown] [-expires-within days] [-max-expiry-days days] [-max-entries count] [-require-expiry] [-require-line] [-require-exact-path]
   open-secret-guard allowlist-suggest [path ...] [-format text|json] [flags]
   open-secret-guard env-example <env-file> [-output .env.example] [-placeholder CHANGE_ME]
   open-secret-guard 1password-template <env-example-file> -vault <vault> -item <item> [-output .env.1password] [-preserve-references]

@@ -381,6 +381,27 @@ func TestAllowlistCheckReportJSONIncludesOnlyReviewableFields(t *testing.T) {
 	}
 }
 
+func TestAllowlistMarkdownListsEntriesAndEscapesPipes(t *testing.T) {
+	entry := allowlist.Entry{
+		RuleID:      "github-token",
+		PathPattern: "config/team|shared.env",
+		Line:        7,
+		ExpiresAt:   time.Date(2026, time.December, 31, 0, 0, 0, 0, time.UTC),
+	}
+	got := allowlistMarkdown([]allowlist.Entry{entry})
+	for _, want := range []string{
+		"| Rule | Path | Line | Expires |",
+		"| github-token | config/team\\|shared.env | 7 | 2026-12-31 |",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected markdown report to contain %q:\n%s", want, got)
+		}
+	}
+	if got := allowlistMarkdown(nil); !strings.HasSuffix(got, "| --- | --- | ---: | --- |\n") {
+		t.Fatalf("empty report should still contain the table header: %q", got)
+	}
+}
+
 func TestAllowlistCheckReportJSONIncludesMissingExpiryEntries(t *testing.T) {
 	entry := allowlist.Entry{RuleID: "github-token", PathPattern: "config/example.env", Line: 4}
 	output, err := allowlistCheckReportJSON([]allowlist.Entry{entry}, nil, nil, []allowlist.Entry{entry}, nil, nil)

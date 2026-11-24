@@ -176,6 +176,12 @@ Validate an allowlist before using it in CI. The scanner also performs this vali
 open-secret-guard allowlist-check .open-secret-guard.allowlist
 ```
 
+Export the allowlist as a Markdown table for a pull request or audit note:
+
+```sh
+open-secret-guard allowlist-check .open-secret-guard.allowlist -format markdown
+```
+
 Fail a CI check before temporary allowlist exceptions expire. The window includes entries expiring today and never prints matched values:
 
 ```sh
