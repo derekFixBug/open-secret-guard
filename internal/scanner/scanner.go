@@ -216,8 +216,8 @@ var defaultRules = []Rule{
 		ID:       "database-url",
 		Provider: "generic",
 		Severity: "medium",
-		Message:  "Database URLs with inline credentials should be kept out of source files.",
-		Pattern:  regexp.MustCompile(`(?i)\b(postgres|postgresql|mysql|mongodb(?:\+srv)?|rediss?)://[^/\s:@]+:[^/\s:@]+@`),
+		Message:  "Database and service URLs with inline credentials should be kept out of source files.",
+		Pattern:  regexp.MustCompile(`(?i)\b(?:https?|ftps?|smtps?|amqps?|postgres|postgresql|mysql|mongodb(?:\+srv)?|rediss?)://[^/\s:@]+:[^/\s:@]+@`),
 	},
 }
 

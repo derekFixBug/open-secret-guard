@@ -55,8 +55,8 @@ func TestScanDetectsEncryptedPrivateKey(t *testing.T) {
 	}
 }
 
-func TestScanDetectsSecureDatabaseURLsWithCredentials(t *testing.T) {
-	for _, scheme := range []string{"mongodb+srv", "rediss"} {
+func TestScanDetectsServiceURLsWithCredentials(t *testing.T) {
+	for _, scheme := range []string{"mongodb+srv", "rediss", "https", "smtps", "amqp"} {
 		t.Run(scheme, func(t *testing.T) {
 			findings := scanContent("config.txt", scheme+"://demo:example@localhost/db")
 			if len(findings) != 1 || findings[0].RuleID != "database-url" {
