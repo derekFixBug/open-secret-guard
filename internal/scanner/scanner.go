@@ -192,6 +192,13 @@ var defaultRules = []Rule{
 		Pattern:  regexp.MustCompile(`\beyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b`),
 	},
 	{
+		ID:       "bearer-token",
+		Provider: "generic",
+		Severity: "high",
+		Message:  "Opaque bearer access tokens should not be committed.",
+		Pattern:  regexp.MustCompile(`(?i)\bAuthorization\s*:\s*Bearer\s+[A-Za-z0-9._~+/-]{20,}={0,2}`),
+	},
+	{
 		ID:       "basic-auth-credentials",
 		Provider: "generic",
 		Severity: "medium",
@@ -453,6 +460,9 @@ func scanContentWithMaxBytes(path string, content string, maxBytes int) []Findin
 			matches := rule.Pattern.FindAllStringIndex(line, -1)
 			for _, match := range matches {
 				raw := line[match[0]:match[1]]
+				if rule.ID == "bearer-token" && isJWTBearerHeader(raw) {
+					continue
+				}
 				findings = append(findings, Finding{
 					RuleID:        rule.ID,
 					Severity:      rule.Severity,
@@ -467,6 +477,15 @@ func scanContentWithMaxBytes(path string, content string, maxBytes int) []Findin
 	}
 
 	return findings
+}
+
+func isJWTBearerHeader(value string) bool {
+	fields := strings.Fields(value)
+	if len(fields) < 3 {
+		return false
+	}
+	token := fields[len(fields)-1]
+	return strings.HasPrefix(token, "eyJ") && strings.Count(token, ".") == 2
 }
 
 func configuredMaxFileBytes(configuredMaxBytes int) int {

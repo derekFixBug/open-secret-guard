@@ -79,6 +79,22 @@ func TestScanDetectsBasicAuthCredentialsOnlyInAuthorizationHeaders(t *testing.T)
 	}
 }
 
+func TestScanDetectsOpaqueBearerTokensWithoutDuplicatingJWTs(t *testing.T) {
+	findings := scanContent("request.txt", "Authorization: Bearer mF_9.B5f-4.1JqM6BCQ4F2F5cJ0\n")
+	if len(findings) != 1 || findings[0].RuleID != "bearer-token" || findings[0].Severity != "high" {
+		t.Fatalf("expected opaque bearer token finding, got %#v", findings)
+	}
+
+	findings = scanContent("request.txt", "Authorization: Bearer "+jwtTokenFixture()+"\n")
+	if len(findings) != 1 || findings[0].RuleID != "jwt-token" {
+		t.Fatalf("JWT should be reported once by jwt-token, got %#v", findings)
+	}
+
+	if findings := scanContent("docs.md", "Authorization: Bearer <access-token>\n"); len(findings) != 0 {
+		t.Fatalf("placeholder token should not be reported: %#v", findings)
+	}
+}
+
 func TestScanReadsStandardInput(t *testing.T) {
 	content := "GITHUB_TOKEN=" + githubTokenFixture() + "\n"
 	report, err := scan(Options{Paths: []string{"-"}}, strings.NewReader(content))
